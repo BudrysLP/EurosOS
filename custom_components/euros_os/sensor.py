@@ -26,6 +26,7 @@ from .geo import (
     GEO_UPPER_SOURCE_DELTA_T_NAME,
     calculate_ground_source_delta_t,
     calculate_upper_source_delta_t,
+    entity_supported_for_device,
     sensor_info_for_device,
 )
 
@@ -41,6 +42,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
     unique_prefix = entry_data.get(CONF_KEY, "---")
     device_type = entry_data.get("device_type")
     for key, info in SENSORS_VARIABLES.items():
+        if not entity_supported_for_device(key, device_type):
+            continue
         model_info = sensor_info_for_device(key, info, device_type)
         entities.append(EurosOSSensor(coordinator, key, model_info, unique_prefix, device_info))
 
