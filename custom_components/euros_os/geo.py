@@ -16,7 +16,7 @@ GEO_SENSOR_NAME_OVERRIDES = {
 }
 
 GEO_GROUND_SOURCE_DELTA_T = "GEO_GROUND_SOURCE_DELTA_T"
-GEO_GROUND_SOURCE_DELTA_T_NAME = "Różnica temperatur dolnego źródła (ΔT)"
+GEO_GROUND_SOURCE_DELTA_T_NAME = "Temperatura różnicowa dolnego źródła (ΔT)"
 
 
 def sensor_info_for_device(key: str, info: tuple, device_type: str | None) -> tuple:
