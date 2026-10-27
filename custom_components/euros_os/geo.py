@@ -9,6 +9,7 @@ import math
 from collections.abc import Mapping
 
 GEO_DEVICE_TYPE = "FriskoGEO"
+GEO_MANUFACTURER = "Euros Energy"
 
 # Values from air-source hardware that are not applicable to ground-source GEO pumps.
 GEO_EXCLUDED_ENTITIES = frozenset({
@@ -41,6 +42,28 @@ GEO_GROUND_SOURCE_DELTA_T_NAME = "Dolne źródło — temperatura różnicowa (�
 
 GEO_UPPER_SOURCE_DELTA_T = "GEO_UPPER_SOURCE_DELTA_T"
 GEO_UPPER_SOURCE_DELTA_T_NAME = "Górne źródło — temperatura różnicowa (ΔT)"
+
+
+def geo_device_software_version(device: Mapping[str, object] | None) -> str | None:
+    """Read GEO firmware version from live MQTT fields VER_S1 and VER_S2.
+
+    This matches the existing SW_VERSION entity; MQTT's outer Version field
+    describes the payload and is not used as the firmware version.
+    """
+    if not isinstance(device, Mapping):
+        return None
+    data = device.get("Data")
+    if not isinstance(data, Mapping):
+        return None
+    major = data.get("VER_S1")
+    minor = data.get("VER_S2")
+    if major is None or minor is None:
+        return None
+    major_text = str(major).strip()
+    minor_text = str(minor).strip()
+    if not major_text.isdecimal() or not minor_text.isdecimal():
+        return None
+    return f"{major_text}.{minor_text}"
 
 
 def sensor_info_for_device(key: str, info: tuple, device_type: str | None) -> tuple:
