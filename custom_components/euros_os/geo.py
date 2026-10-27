@@ -13,15 +13,15 @@ GEO_DEVICE_TYPE = "FriskoGEO"
 GEO_SENSOR_NAME_OVERRIDES = {
     "T3fiz": "Temperatura powrotu z dolnego źródła",
     "T4fiz": "Temperatura wyjścia do dolnego źródła",
-    "T5fiz": "Temperatura powrotu górnego źródła",
-    "TSM13": "Temperatura zasilania górnego źródła",
+    "T5fiz": "Górne źródło — temperatura powrotu",
+    "TSM13": "Górne źródło — temperatura zasilania",
 }
 
 GEO_GROUND_SOURCE_DELTA_T = "GEO_GROUND_SOURCE_DELTA_T"
 GEO_GROUND_SOURCE_DELTA_T_NAME = "Temperatura różnicowa dolnego źródła (ΔT)"
 
 GEO_UPPER_SOURCE_DELTA_T = "GEO_UPPER_SOURCE_DELTA_T"
-GEO_UPPER_SOURCE_DELTA_T_NAME = "Temperatura różnicowa górnego źródła (ΔT)"
+GEO_UPPER_SOURCE_DELTA_T_NAME = "Górne źródło — temperatura różnicowa (ΔT)"
 
 
 def sensor_info_for_device(key: str, info: tuple, device_type: str | None) -> tuple:
