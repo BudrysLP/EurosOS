@@ -53,9 +53,9 @@ class GeoSensorTests(unittest.TestCase):
         self.assertEqual(
             sorted(labels),
             [
-                "Temperatura powrotu górnego źródła",
-                "Temperatura różnicowa górnego źródła (ΔT)",
-                "Temperatura zasilania górnego źródła",
+                "Górne źródło — temperatura powrotu",
+                "Górne źródło — temperatura różnicowa (ΔT)",
+                "Górne źródło — temperatura zasilania",
             ],
         )
         self.assertEqual(
