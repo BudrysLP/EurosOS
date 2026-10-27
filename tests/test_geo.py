@@ -43,6 +43,39 @@ class GeoSensorTests(unittest.TestCase):
             ],
         )
 
+    def test_upper_source_labels_sort_together(self):
+        original = ("Original", "°C", "mdi:thermometer", "temperature")
+        labels = [
+            geo.sensor_info_for_device(key, original, geo.GEO_DEVICE_TYPE)[0]
+            for key in ("T5fiz", "TSM13")
+        ]
+        labels.append(geo.GEO_UPPER_SOURCE_DELTA_T_NAME)
+        self.assertEqual(
+            sorted(labels),
+            [
+                "Temperatura powrotu górnego źródła",
+                "Temperatura różnicowa górnego źródła (ΔT)",
+                "Temperatura zasilania górnego źródła",
+            ],
+        )
+        self.assertEqual(
+            geo.sensor_info_for_device("T5fiz", original, "Other"), original
+        )
+
+    def test_upper_source_delta(self):
+        self.assertEqual(
+            geo.calculate_upper_source_delta_t({"TSM13": 27.4, "T5fiz": 22.3}),
+            5.1,
+        )
+        self.assertEqual(
+            geo.calculate_upper_source_delta_t({"TSM13": 19.1, "T5fiz": 20.2}),
+            -1.1,
+        )
+        self.assertIsNone(geo.calculate_upper_source_delta_t({"TSM13": 27.4}))
+        self.assertIsNone(
+            geo.calculate_upper_source_delta_t({"TSM13": "nan", "T5fiz": 22.3})
+        )
+
     def test_delta_positive_and_negative(self):
         self.assertEqual(geo.calculate_ground_source_delta_t({"T3fiz": "10.9", "T4fiz": "8.8"}), 2.1)
         self.assertEqual(geo.calculate_ground_source_delta_t({"T3fiz": "2", "T4fiz": "4"}), -2.0)
