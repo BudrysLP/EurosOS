@@ -21,7 +21,7 @@ class GeoSensorTests(unittest.TestCase):
         original = ("Temp. powietrza zasysanego", "°C", "mdi:thermometer", "temperature")
         self.assertEqual(
             geo.sensor_info_for_device("T3fiz", original, "FriskoGEO")[0],
-            "Temperatura powrotu z dolnego źródła",
+            "Dolne źródło — temperatura powrotu z gruntu",
         )
         self.assertEqual(geo.sensor_info_for_device("T3fiz", original, "Other"), original)
         self.assertEqual(geo.sensor_info_for_device("T3fiz", original, None), original)
@@ -37,9 +37,9 @@ class GeoSensorTests(unittest.TestCase):
         self.assertEqual(
             sorted(names),
             [
-                "Temperatura powrotu z dolnego źródła",
-                "Temperatura różnicowa dolnego źródła (ΔT)",
-                "Temperatura wyjścia do dolnego źródła",
+                "Dolne źródło — temperatura powrotu z gruntu",
+                "Dolne źródło — temperatura różnicowa (ΔT)",
+                "Dolne źródło — temperatura wyjścia do gruntu",
             ],
         )
 
