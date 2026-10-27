@@ -10,6 +10,18 @@ from collections.abc import Mapping
 
 GEO_DEVICE_TYPE = "FriskoGEO"
 
+# Values from air-source hardware that are not applicable to ground-source GEO pumps.
+GEO_EXCLUDED_ENTITIES = frozenset({
+    "ZM_FAN1_SPE",
+    "ZM_FAN2_SPE",
+    "ZM_DEFR_SIGN",
+})
+
+
+def entity_supported_for_device(key: str, device_type: str | None) -> bool:
+    """Keep all existing entity types except GEO-only hardware exclusions."""
+    return device_type != GEO_DEVICE_TYPE or key not in GEO_EXCLUDED_ENTITIES
+
 GEO_SENSOR_NAME_OVERRIDES = {
     "T3fiz": "Dolne źródło — temperatura powrotu z gruntu",
     "T4fiz": "Dolne źródło — temperatura wyjścia do gruntu",
