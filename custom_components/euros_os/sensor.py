@@ -18,6 +18,13 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import callback
 from .const import DOMAIN, CONF_KEY, CONF_IP, SENSORS_VARIABLES, MQTT_TIMEOUT
 from .coordinator import EurosOSMQTTCoordinator
+from .geo import (
+    GEO_DEVICE_TYPE,
+    GEO_GROUND_SOURCE_DELTA_T,
+    GEO_GROUND_SOURCE_DELTA_T_NAME,
+    calculate_ground_source_delta_t,
+    sensor_info_for_device,
+)
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
 
@@ -29,8 +36,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     entities = []
     unique_prefix = entry_data.get(CONF_KEY, "---")
+    device_type = entry_data.get("device_type")
     for key, info in SENSORS_VARIABLES.items():
-        entities.append(EurosOSSensor(coordinator, key, info, unique_prefix, device_info))
+        model_info = sensor_info_for_device(key, info, device_type)
+        entities.append(EurosOSSensor(coordinator, key, model_info, unique_prefix, device_info))
+
+    if device_type == GEO_DEVICE_TYPE:
+        entities.append(
+            EurosOSSensor(
+                coordinator,
+                GEO_GROUND_SOURCE_DELTA_T,
+                (GEO_GROUND_SOURCE_DELTA_T_NAME, "°C", "mdi:delta", "temperature"),
+                unique_prefix,
+                device_info,
+            )
+        )
 
     async_add_entities(entities)
     _LOGGER.info("Added %d sensors entities.", len(entities))
@@ -64,6 +84,9 @@ class EurosOSSensor(SensorEntity):
         if not device:
             return None
         data = device.get("Data", {})
+
+        if self.key == GEO_GROUND_SOURCE_DELTA_T:
+            return calculate_ground_source_delta_t(data)
 
         if self.key == "STATE":
             try:
