@@ -74,6 +74,23 @@ class GeoSensorTests(unittest.TestCase):
                 geo.sensor_info_for_device(key, original, "Other"), original
             )
 
+    def test_ambient_temperature_labels_geo_only(self):
+        labels = {
+            "TSM10": "Temperatura wewnętrzna - aktualna",
+            "TSM9": "Temperatura zewnętrzna - aktualna",
+            "TOUT_KOR": "Temperatura zewnętrzna - średnia z pompy",
+        }
+        for key, name in labels.items():
+            original = ("Old temperature label", "°C", "mdi:thermometer", "temperature")
+            self.assertEqual(
+                geo.sensor_info_for_device(key, original, "FriskoGEO"),
+                (name, *original[1:]),
+            )
+            self.assertEqual(
+                geo.sensor_info_for_device(key, original, "AnotherType"),
+                original,
+            )
+
     def test_ground_source_labels_sort_together(self):
         original = ("Original", "°C", "mdi:thermometer", "temperature")
         names = [
