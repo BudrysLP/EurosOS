@@ -13,10 +13,15 @@ GEO_DEVICE_TYPE = "FriskoGEO"
 GEO_SENSOR_NAME_OVERRIDES = {
     "T3fiz": "Temperatura powrotu z dolnego źródła",
     "T4fiz": "Temperatura wyjścia do dolnego źródła",
+    "T5fiz": "Temperatura powrotu górnego źródła",
+    "TSM13": "Temperatura zasilania górnego źródła",
 }
 
 GEO_GROUND_SOURCE_DELTA_T = "GEO_GROUND_SOURCE_DELTA_T"
 GEO_GROUND_SOURCE_DELTA_T_NAME = "Temperatura różnicowa dolnego źródła (ΔT)"
+
+GEO_UPPER_SOURCE_DELTA_T = "GEO_UPPER_SOURCE_DELTA_T"
+GEO_UPPER_SOURCE_DELTA_T_NAME = "Temperatura różnicowa górnego źródła (ΔT)"
 
 
 def sensor_info_for_device(key: str, info: tuple, device_type: str | None) -> tuple:
@@ -27,21 +32,29 @@ def sensor_info_for_device(key: str, info: tuple, device_type: str | None) -> tu
     return (label, *info[1:]) if label else info
 
 
-def calculate_ground_source_delta_t(data: Mapping[str, object]) -> float | None:
-    """T3fiz (return from ground) - T4fiz (outlet to ground), in °C.
-
-    None means that at least one measurement is absent, invalid or outside
-    the same plausible temperature bounds used by the existing integration.
-    """
+def _calculate_delta_t(
+    data: Mapping[str, object], warm_sensor: str, cool_sensor: str
+) -> float | None:
+    """Calculate a temperature difference without treating absent values as zero."""
     try:
-        return_temp = float(data["T3fiz"])
-        outlet_temp = float(data["T4fiz"])
+        warm_temp = float(data[warm_sensor])
+        cool_temp = float(data[cool_sensor])
     except (KeyError, TypeError, ValueError):
         return None
 
-    if not (math.isfinite(return_temp) and math.isfinite(outlet_temp)):
+    if not (math.isfinite(warm_temp) and math.isfinite(cool_temp)):
         return None
-    if not (-50 <= return_temp <= 149 and -50 <= outlet_temp <= 149):
+    if not (-50 <= warm_temp <= 149 and -50 <= cool_temp <= 149):
         return None
 
-    return round(return_temp - outlet_temp, 1)
+    return round(warm_temp - cool_temp, 1)
+
+
+def calculate_ground_source_delta_t(data: Mapping[str, object]) -> float | None:
+    """Return from ground (T3fiz) minus outlet to ground (T4fiz), in °C."""
+    return _calculate_delta_t(data, "T3fiz", "T4fiz")
+
+
+def calculate_upper_source_delta_t(data: Mapping[str, object]) -> float | None:
+    """Heating-side supply (TSM13) minus return (T5fiz), in °C."""
+    return _calculate_delta_t(data, "TSM13", "T5fiz")
