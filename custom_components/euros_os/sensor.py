@@ -22,7 +22,10 @@ from .geo import (
     GEO_DEVICE_TYPE,
     GEO_GROUND_SOURCE_DELTA_T,
     GEO_GROUND_SOURCE_DELTA_T_NAME,
+    GEO_UPPER_SOURCE_DELTA_T,
+    GEO_UPPER_SOURCE_DELTA_T_NAME,
     calculate_ground_source_delta_t,
+    calculate_upper_source_delta_t,
     sensor_info_for_device,
 )
 
@@ -42,15 +45,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entities.append(EurosOSSensor(coordinator, key, model_info, unique_prefix, device_info))
 
     if device_type == GEO_DEVICE_TYPE:
-        entities.append(
-            EurosOSSensor(
-                coordinator,
-                GEO_GROUND_SOURCE_DELTA_T,
-                (GEO_GROUND_SOURCE_DELTA_T_NAME, "°C", "mdi:delta", "temperature"),
-                unique_prefix,
-                device_info,
+        for key, label in (
+            (GEO_GROUND_SOURCE_DELTA_T, GEO_GROUND_SOURCE_DELTA_T_NAME),
+            (GEO_UPPER_SOURCE_DELTA_T, GEO_UPPER_SOURCE_DELTA_T_NAME),
+        ):
+            entities.append(
+                EurosOSSensor(
+                    coordinator,
+                    key,
+                    (label, "°C", "mdi:delta", "temperature"),
+                    unique_prefix,
+                    device_info,
+                )
             )
-        )
 
     async_add_entities(entities)
     _LOGGER.info("Added %d sensors entities.", len(entities))
@@ -87,6 +94,8 @@ class EurosOSSensor(SensorEntity):
 
         if self.key == GEO_GROUND_SOURCE_DELTA_T:
             return calculate_ground_source_delta_t(data)
+        if self.key == GEO_UPPER_SOURCE_DELTA_T:
+            return calculate_upper_source_delta_t(data)
 
         if self.key == "STATE":
             try:
