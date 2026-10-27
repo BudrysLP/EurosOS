@@ -11,14 +11,14 @@ from collections.abc import Mapping
 GEO_DEVICE_TYPE = "FriskoGEO"
 
 GEO_SENSOR_NAME_OVERRIDES = {
-    "T3fiz": "Temperatura powrotu z dolnego źródła",
-    "T4fiz": "Temperatura wyjścia do dolnego źródła",
+    "T3fiz": "Dolne źródło — temperatura powrotu z gruntu",
+    "T4fiz": "Dolne źródło — temperatura wyjścia do gruntu",
     "T5fiz": "Górne źródło — temperatura powrotu",
     "TSM13": "Górne źródło — temperatura zasilania",
 }
 
 GEO_GROUND_SOURCE_DELTA_T = "GEO_GROUND_SOURCE_DELTA_T"
-GEO_GROUND_SOURCE_DELTA_T_NAME = "Temperatura różnicowa dolnego źródła (ΔT)"
+GEO_GROUND_SOURCE_DELTA_T_NAME = "Dolne źródło — temperatura różnicowa (ΔT)"
 
 GEO_UPPER_SOURCE_DELTA_T = "GEO_UPPER_SOURCE_DELTA_T"
 GEO_UPPER_SOURCE_DELTA_T_NAME = "Górne źródło — temperatura różnicowa (ΔT)"
