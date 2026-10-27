@@ -27,6 +27,22 @@ class GeoSensorTests(unittest.TestCase):
         self.assertEqual(geo.sensor_info_for_device("T3fiz", original, None), original)
         self.assertEqual(geo.sensor_info_for_device("OTHER", original, "FriskoGEO"), original)
 
+    def test_ground_source_labels_sort_together(self):
+        original = ("Original", "°C", "mdi:thermometer", "temperature")
+        names = [
+            geo.sensor_info_for_device(key, original, geo.GEO_DEVICE_TYPE)[0]
+            for key in ("T3fiz", "T4fiz")
+        ]
+        names.append(geo.GEO_GROUND_SOURCE_DELTA_T_NAME)
+        self.assertEqual(
+            sorted(names),
+            [
+                "Temperatura powrotu z dolnego źródła",
+                "Temperatura różnicowa dolnego źródła (ΔT)",
+                "Temperatura wyjścia do dolnego źródła",
+            ],
+        )
+
     def test_delta_positive_and_negative(self):
         self.assertEqual(geo.calculate_ground_source_delta_t({"T3fiz": "10.9", "T4fiz": "8.8"}), 2.1)
         self.assertEqual(geo.calculate_ground_source_delta_t({"T3fiz": "2", "T4fiz": "4"}), -2.0)
