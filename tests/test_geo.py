@@ -27,6 +27,17 @@ class GeoSensorTests(unittest.TestCase):
         self.assertEqual(geo.sensor_info_for_device("T3fiz", original, None), original)
         self.assertEqual(geo.sensor_info_for_device("OTHER", original, "FriskoGEO"), original)
 
+    def test_air_source_entities_not_created_for_geo(self):
+        excluded = ("ZM_FAN1_SPE", "ZM_FAN2_SPE", "ZM_DEFR_SIGN")
+        for key in excluded:
+            self.assertFalse(geo.entity_supported_for_device(key, "FriskoGEO"))
+            self.assertTrue(geo.entity_supported_for_device(key, "Other"))
+            self.assertTrue(geo.entity_supported_for_device(key, None))
+
+    def test_heaters_and_other_geo_entities_remain(self):
+        for key in ("SIO_R11", "SIO_R01", "TSM15", "TSM17", "T3fiz"):
+            self.assertTrue(geo.entity_supported_for_device(key, "FriskoGEO"))
+
     def test_storage_tank_names_geo_only(self):
         originals = {
             "TSM15": ("Temp. zbiornika CWU", "°C", "mdi:thermometer", "temperature"),
