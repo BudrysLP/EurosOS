@@ -34,7 +34,7 @@ class GeoSensorTests(unittest.TestCase):
         }
         expected = {
             "TSM15": "CWU — temperatura zbiornika",
-            "TSM17": "Bufor CO — temperatura zbiornika",
+            "TSM17": "CO — temperatura zbiornika",
         }
         for key, original in originals.items():
             self.assertEqual(
