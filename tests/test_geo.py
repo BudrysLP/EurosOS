@@ -45,6 +45,24 @@ class GeoSensorTests(unittest.TestCase):
                 geo.sensor_info_for_device(key, original, "Other"), original
             )
 
+    def test_target_temperature_names_geo_only(self):
+        originals = {
+            "SX5": ("Temp. zadana CWU", "°C", "mdi:thermometer", "temperature"),
+            "SX6": ("Temp. zadana CO", "°C", "mdi:thermometer", "temperature"),
+        }
+        expected = {
+            "SX5": "CWU — temperatura zadana zbiornika",
+            "SX6": "CO — temperatura zadana pomieszczenia",
+        }
+        for key, original in originals.items():
+            self.assertEqual(
+                geo.sensor_info_for_device(key, original, geo.GEO_DEVICE_TYPE)[0],
+                expected[key],
+            )
+            self.assertEqual(
+                geo.sensor_info_for_device(key, original, "Other"), original
+            )
+
     def test_ground_source_labels_sort_together(self):
         original = ("Original", "°C", "mdi:thermometer", "temperature")
         names = [
