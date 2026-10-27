@@ -17,6 +17,23 @@ spec.loader.exec_module(geo)
 
 
 class GeoSensorTests(unittest.TestCase):
+    def test_geo_device_firmware_version(self):
+        self.assertEqual(
+            geo.geo_device_software_version(
+                {"Name": "GEO_1", "Version": "1_0", "Data": {"VER_S1": "870", "VER_S2": "12"}}
+            ),
+            "870.12",
+        )
+        self.assertIsNone(
+            geo.geo_device_software_version(
+                {"Version": "1_0", "Data": {"VER_S1": "870"}}
+            )
+        )
+        self.assertIsNone(geo.geo_device_software_version({"Data": {"VER_S1": "", "VER_S2": "12"}}))
+        self.assertIsNone(geo.geo_device_software_version({"Data": {"VER_S1": "bad", "VER_S2": "12"}}))
+        self.assertIsNone(geo.geo_device_software_version({"Version": "1_0"}))
+        self.assertIsNone(geo.geo_device_software_version(None))
+
     def test_geo_names_are_model_specific(self):
         original = ("Temp. powietrza zasysanego", "°C", "mdi:thermometer", "temperature")
         self.assertEqual(
