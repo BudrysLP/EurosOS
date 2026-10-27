@@ -17,6 +17,8 @@ GEO_SENSOR_NAME_OVERRIDES = {
     "TSM13": "Górne źródło — temperatura zasilania",
     "TSM15": "CWU — temperatura zbiornika",
     "TSM17": "CO — temperatura zbiornika",
+    "SX5": "CWU — temperatura zadana zbiornika",
+    "SX6": "CO — temperatura zadana pomieszczenia",
 }
 
 GEO_GROUND_SOURCE_DELTA_T = "GEO_GROUND_SOURCE_DELTA_T"
