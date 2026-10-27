@@ -27,6 +27,24 @@ class GeoSensorTests(unittest.TestCase):
         self.assertEqual(geo.sensor_info_for_device("T3fiz", original, None), original)
         self.assertEqual(geo.sensor_info_for_device("OTHER", original, "FriskoGEO"), original)
 
+    def test_storage_tank_names_geo_only(self):
+        originals = {
+            "TSM15": ("Temp. zbiornika CWU", "°C", "mdi:thermometer", "temperature"),
+            "TSM17": ("Temp. zbiornika buforowego", "°C", "mdi:thermometer", "temperature"),
+        }
+        expected = {
+            "TSM15": "CWU — temperatura zbiornika",
+            "TSM17": "Bufor CO — temperatura zbiornika",
+        }
+        for key, original in originals.items():
+            self.assertEqual(
+                geo.sensor_info_for_device(key, original, geo.GEO_DEVICE_TYPE)[0],
+                expected[key],
+            )
+            self.assertEqual(
+                geo.sensor_info_for_device(key, original, "Other"), original
+            )
+
     def test_ground_source_labels_sort_together(self):
         original = ("Original", "°C", "mdi:thermometer", "temperature")
         names = [
