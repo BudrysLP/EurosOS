@@ -96,6 +96,7 @@ class GeoSensorTests(unittest.TestCase):
             "TSM10": "Temperatura wewnętrzna - aktualna",
             "TSM9": "Temperatura zewnętrzna - aktualna",
             "TOUT_KOR": "Temperatura zewnętrzna - średnia z pompy",
+            "TSM16": "Temp. wejściowa czynnika (sprężarka)",
         }
         for key, name in labels.items():
             original = ("Old temperature label", "°C", "mdi:thermometer", "temperature")
