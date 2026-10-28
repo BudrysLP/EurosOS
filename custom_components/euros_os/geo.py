@@ -35,6 +35,7 @@ GEO_SENSOR_NAME_OVERRIDES = {
     "TSM10": "Temperatura wewnętrzna - aktualna",
     "TSM9": "Temperatura zewnętrzna - aktualna",
     "TOUT_KOR": "Temperatura zewnętrzna - średnia z pompy",
+    "TSM16": "Temp. wejściowa czynnika (sprężarka)",
 }
 
 GEO_GROUND_SOURCE_DELTA_T = "GEO_GROUND_SOURCE_DELTA_T"
