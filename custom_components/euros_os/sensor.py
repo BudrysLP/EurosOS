@@ -34,8 +34,6 @@ from .ems import (
 )
 from .geo import (
     GEO_DEVICE_TYPE,
-    GEO_P1_UNVERIFIED_SENSOR_KEYS,
-    calculate_geo_operating_state,
     GEO_GROUND_SOURCE_DELTA_T,
     GEO_GROUND_SOURCE_DELTA_T_NAME,
     GEO_UPPER_SOURCE_DELTA_T,
@@ -125,22 +123,6 @@ class EurosOSSensor(SensorEntity):
 
 
     @property
-    def available(self):
-        """Do not display unsupported GEO measurements or guessed IDLE."""
-        device = self.coordinator.device
-        if isinstance(device, dict) and device.get("Type") == GEO_DEVICE_TYPE:
-            if self.key in GEO_P1_UNVERIFIED_SENSOR_KEYS:
-                return False
-            if self.key == "STATE":
-                last_update = getattr(self.coordinator, "_last_update", None)
-                return (
-                    last_update is not None
-                    and time.time() - last_update <= MQTT_TIMEOUT
-                    and calculate_geo_operating_state(device.get("Data")) is not None
-                )
-        return super().available
-
-    @property
     def state(self):
         if getattr(self.coordinator, "_last_update", None) is None:
             return "unavailable"
@@ -151,15 +133,6 @@ class EurosOSSensor(SensorEntity):
         if not device:
             return None
         data = device.get("Data", {})
-
-        if device.get("Type") == GEO_DEVICE_TYPE:
-            if self.key in GEO_P1_UNVERIFIED_SENSOR_KEYS:
-                # These values are not supplied by FriskoGEO in verified MQTT
-                # packets. Preserve their entity IDs without false 0 W/kWh.
-                return None
-            if self.key == "STATE":
-                # Missing/invalid state flags are unknown, not IDLE.
-                return calculate_geo_operating_state(data)
 
         if self.key == GEO_GROUND_SOURCE_DELTA_T:
             return calculate_ground_source_delta_t(data)
