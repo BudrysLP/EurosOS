@@ -17,6 +17,102 @@ spec.loader.exec_module(geo)
 
 
 class GeoSensorTests(unittest.TestCase):
+    def test_p1_unverified_readings_keep_their_geo_entity_ids(self):
+        expected = {
+            "ZM_AC_IN_VOL",
+            "ZM_AC_IN_CUR",
+            "ZM_AC_IN_PWR",
+            "ZM_AC_IN_ENERGY",
+            "ZM_SUCT_TEMP",
+        }
+        self.assertEqual(geo.GEO_P1_UNVERIFIED_SENSOR_KEYS, expected)
+        # These are deliberately not excluded from entity creation. Their
+        # previous HA unique_id and history must remain present.
+        for key in expected:
+            self.assertTrue(geo.entity_supported_for_device(key, geo.GEO_DEVICE_TYPE))
+
+    def test_p1_geo_state_with_complete_realistic_log_flags_is_idle(self):
+        sample = {
+            "SBF_DHS": "1",
+            "SBF_DHX": "1",
+            "SBF_OOF": "1",
+            "SBB_QHW": "0",
+            "SXF_TOE": "1",
+            "SBB_QHT": "0",
+            "SBB_QHL": "0",
+        }
+        # All seven bits were present in the 357 sampled GEO_1 MQTT packets.
+        self.assertEqual(geo.calculate_geo_operating_state(sample), "IDLE")
+
+    def test_p1_geo_state_matches_old_cwu_and_co_conditions(self):
+        sample = {
+            "SBF_DHS": "1",
+            "SBF_DHX": "1",
+            "SBF_OOF": "1",
+            "SBB_QHW": "0",
+            "SXF_TOE": "1",
+            "SBB_QHT": "0",
+            "SBB_QHL": "0",
+        }
+        self.assertEqual(
+            geo.calculate_geo_operating_state({**sample, "SBB_QHW": "1"}),
+            "CWU",
+        )
+        self.assertEqual(
+            geo.calculate_geo_operating_state({**sample, "SBB_QHT": "1"}),
+            "CO",
+        )
+        self.assertEqual(
+            geo.calculate_geo_operating_state({**sample, "SBB_QHL": "1"}),
+            "CO",
+        )
+        # Preserve the existing CWU-first priority if both flags are active.
+        self.assertEqual(
+            geo.calculate_geo_operating_state(
+                {**sample, "SBB_QHW": "1", "SBB_QHT": "1"}
+            ),
+            "CWU",
+        )
+
+    def test_p1_geo_state_missing_flags_must_not_fake_idle(self):
+        flags = {
+            "SBF_DHS": "1",
+            "SBF_DHX": "1",
+            "SBF_OOF": "1",
+            "SBB_QHW": "0",
+            "SXF_TOE": "1",
+            "SBB_QHT": "0",
+            "SBB_QHL": "0",
+        }
+        for key in flags:
+            partial = {k: v for k, v in flags.items() if k != key}
+            self.assertIsNone(geo.calculate_geo_operating_state(partial))
+        self.assertIsNone(geo.calculate_geo_operating_state({}))
+        self.assertIsNone(geo.calculate_geo_operating_state(None))
+        self.assertIsNone(geo.calculate_geo_operating_state("bad payload"))
+
+    def test_p1_geo_state_rejects_invalid_flag_values(self):
+        good = {
+            "SBF_DHS": "1",
+            "SBF_DHX": "1",
+            "SBF_OOF": "1",
+            "SBB_QHW": "0",
+            "SXF_TOE": "1",
+            "SBB_QHT": "0",
+            "SBB_QHL": "0",
+        }
+        for invalid in (None, "", "unknown", "unavailable", "nan", "2", "-1", 1.5, True):
+            self.assertIsNone(
+                geo.calculate_geo_operating_state({**good, "SBF_OOF": invalid})
+            )
+        # Genuine 0 and 1 readings are allowed as Python ints as well.
+        self.assertEqual(
+            geo.calculate_geo_operating_state(
+                {k: int(v) for k, v in good.items()}
+            ),
+            "IDLE",
+        )
+
     def test_geo_device_firmware_version(self):
         self.assertEqual(
             geo.geo_device_software_version(
