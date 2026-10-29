@@ -36,9 +36,9 @@ _GEO_STATE_REQUIRED_KEYS = (
 
 
 def calculate_geo_operating_state(data: Mapping[str, object] | None) -> str | None:
-    """Derive the existing CWU/CO/IDLE state only from complete binary data.
+    """Derive CWU/CO/IDLE/OFF state only from complete binary data.
 
-    An incomplete or malformed /Dev packet is not evidence of IDLE. Keep the
+    An incomplete or malformed /Dev packet is not evidence of IDLE or OFF. Keep the
     original state priority and meanings for fully valid FriskoGEO packets.
     This helper is read-only and does not affect heat-pump control commands.
     """
@@ -61,6 +61,11 @@ def calculate_geo_operating_state(data: Mapping[str, object] | None) -> str | No
         if value not in (0, 1):
             return None
         flags[key] = value
+
+    # SBF_OOF=0 denotes the explicitly disabled mode in this controller.
+    # It must not be presented as a pump waiting in IDLE.
+    if flags["SBF_OOF"] == 0:
+        return "OFF"
 
     if (
         flags["SBF_DHS"] == 1
