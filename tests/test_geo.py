@@ -81,6 +81,21 @@ class GeoSensorTests(unittest.TestCase):
             "CWU",
         )
 
+    def test_p1_geo_state_off_is_not_idle(self):
+        sample = {
+            "SBF_DHS": "1",
+            "SBF_DHX": "1",
+            "SBF_OOF": "0",
+            "SBB_QHW": "0",
+            "SXF_TOE": "1",
+            "SBB_QHT": "0",
+            "SBB_QHL": "0",
+        }
+        self.assertEqual(geo.calculate_geo_operating_state(sample), "OFF")
+        # An incomplete OFF packet must not be reported as OFF.
+        del sample["SBB_QHW"]
+        self.assertIsNone(geo.calculate_geo_operating_state(sample))
+
     def test_p1_geo_state_missing_flags_must_not_fake_idle(self):
         flags = {
             "SBF_DHS": "1",
