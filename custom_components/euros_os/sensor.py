@@ -40,6 +40,7 @@ from .geo import (
     GEO_UPPER_SOURCE_DELTA_T_NAME,
     calculate_ground_source_delta_t,
     calculate_upper_source_delta_t,
+    calculate_geo_operating_state,
     entity_supported_for_device,
     sensor_info_for_device,
 )
@@ -59,7 +60,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if not entity_supported_for_device(key, device_type):
             continue
         model_info = sensor_info_for_device(key, info, device_type)
-        entities.append(EurosOSSensor(coordinator, key, model_info, unique_prefix, device_info))
+        entities.append(EurosOSSensor(coordinator, key, model_info, unique_prefix, device_info, device_type=device_type))
 
     if device_type == GEO_DEVICE_TYPE:
         for key, label in (
@@ -73,6 +74,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     (label, "°C", "mdi:delta", "temperature"),
                     unique_prefix,
                     device_info,
+                    device_type=device_type,
                 )
             )
 
@@ -105,8 +107,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class EurosOSSensor(SensorEntity):
-    def __init__(self, coordinator, key, info, unique_prefix, device_info):
+    def __init__(self, coordinator, key, info, unique_prefix, device_info, device_type=None):
         self.coordinator = coordinator
+        self.device_type = device_type
         self.key = key
         self._attr_name = info[0]
         self._unit = info[1] #self._attr_unit_of_measurement = info[1]
@@ -140,6 +143,9 @@ class EurosOSSensor(SensorEntity):
             return calculate_upper_source_delta_t(data)
 
         if self.key == "STATE":
+            if self.device_type == GEO_DEVICE_TYPE:
+                # Never label missing/malformed GEO state flags as IDLE.
+                return calculate_geo_operating_state(data)
             try:
                 SBF_DHS = int(data.get("SBF_DHS", 0))
                 SBF_DHX = int(data.get("SBF_DHX", 0))
