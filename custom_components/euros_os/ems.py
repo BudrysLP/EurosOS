@@ -36,10 +36,10 @@ EMS_DOM_SENSOR_DEFINITIONS = {
     "B_PHA_VIEW_POW_FL_1": ("EMS – Dom – Moc pozorna L2", "kVA", "mdi:flash-outline", "apparent_power", "measurement"),
     "C_PHA_VIEW_POW_FL_1": ("EMS – Dom – Moc pozorna L3", "kVA", "mdi:flash-outline", "apparent_power", "measurement"),
     "TOTAL_APPA_POWER_FL_1": ("EMS – Dom – Moc pozorna całkowita", "kVA", "mdi:flash-outline", "apparent_power", "measurement"),
-    "A_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L1", null, "mdi:angle-acute", "power_factor", "measurement"),
-    "B_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L2", null, "mdi:angle-acute", "power_factor", "measurement"),
-    "C_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L3", null, "mdi:angle-acute", "power_factor", "measurement"),
-    "TOTAL_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy całkowity", null, "mdi:angle-acute", "power_factor", "measurement"),
+    "A_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L1", None, "mdi:angle-acute", "power_factor", "measurement"),
+    "B_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L2", None, "mdi:angle-acute", "power_factor", "measurement"),
+    "C_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L3", None, "mdi:angle-acute", "power_factor", "measurement"),
+    "TOTAL_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy całkowity", None, "mdi:angle-acute", "power_factor", "measurement"),
 }
 
 
