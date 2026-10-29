@@ -77,16 +77,25 @@ def calculate_geo_operating_state(data: Mapping[str, object] | None) -> str | No
         return "CO"
     return "IDLE"
 
-# Values from air-source hardware that are not applicable to ground-source GEO pumps.
+# GEO-specific exclusions: do not create new entities, but leave existing
+# Home Assistant registry entries and their history intact (unavailable).
+# The first three are air-source-only. The following five are P1 measurements
+# absent from the verified GEO_1 MQTT packets, NOT confirmed hardware readings.
+# Keep STATE enabled: the operating-state sensor is explicitly NOT excluded.
 GEO_EXCLUDED_ENTITIES = frozenset({
     "ZM_FAN1_SPE",
     "ZM_FAN2_SPE",
     "ZM_DEFR_SIGN",
+    "ZM_AC_IN_VOL",
+    "ZM_AC_IN_CUR",
+    "ZM_AC_IN_PWR",
+    "ZM_AC_IN_ENERGY",
+    "ZM_SUCT_TEMP",
 })
 
 
 def entity_supported_for_device(key: str, device_type: str | None) -> bool:
-    """Keep all existing entity types except GEO-only hardware exclusions."""
+    """Do not create excluded GEO entities; preserve other models unchanged."""
     return device_type != GEO_DEVICE_TYPE or key not in GEO_EXCLUDED_ENTITIES
 
 GEO_SENSOR_NAME_OVERRIDES = {
