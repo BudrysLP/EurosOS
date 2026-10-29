@@ -17,8 +17,9 @@ spec.loader.exec_module(ems)
 
 
 class EmsMeterTests(unittest.TestCase):
-    def test_25_home_meter_sensors_without_changing_existing_ten(self):
-        self.assertEqual(len(ems.EMS_DOM_SENSOR_DEFINITIONS), 25)
+    def test_all_33_home_meter_fields_and_two_daily_sensors(self):
+        self.assertEqual(len(ems.EMS_DOM_SENSOR_DEFINITIONS), 33)
+        self.assertEqual(len(ems.EMS_DOM_DAILY_SENSOR_DEFINITIONS), 2)
         self.assertEqual(len(ems.EMS_DOM_STAGE_1_DESCRIPTIONS), 15)
         self.assertEqual(ems.EMS_DOM_DEVICE_NAME, "EMS – Dom")
         self.assertEqual(ems.EMS_DOM_METER_NAME, "METER_1")
@@ -65,6 +66,57 @@ class EmsMeterTests(unittest.TestCase):
         for key, raw in sample.items():
             self.assertIn(key, ems.EMS_DOM_SENSOR_DEFINITIONS)
             self.assertEqual(ems.parse_ems_numeric(raw), float(raw))
+
+    def test_stage_2_all_eight_sensor_definitions(self):
+        expected = {
+            "POS_REAC_POW_FL_1": ("Energia bierna dodatnia", "kvarh", "reactive_energy", "total_increasing"),
+            "REW_REAC_POW_FL_1": ("Energia bierna ujemna", "kvarh", "reactive_energy", "total_increasing"),
+            "A_ACT_POW_FL_1": ("Moc L1 – odczyt techniczny", "kW", "power", "measurement"),
+            "B_ACT_POW_FL_1": ("Moc L2 – odczyt techniczny", "kW", "power", "measurement"),
+            "C_ACT_POW_FL_1": ("Moc L3 – odczyt techniczny", "kW", "power", "measurement"),
+            "POS_ACT_POW_FACTOR": ("Współczynnik POS – techniczny", None, None, None),
+            "REV_ACT_POW_FACTOR": ("Współczynnik REV – techniczny", None, None, None),
+            "TOTAL_ACT_POW_FACTOR": ("Współczynnik TOTAL – techniczny", None, None, None),
+        }
+        self.assertEqual(len(expected), 8)
+        self.assertEqual(set(ems.EMS_DOM_STAGE_2_DESCRIPTIONS), set(expected))
+        for key, (label, unit, device_class, state_class) in expected.items():
+            info = ems.EMS_DOM_SENSOR_DEFINITIONS[key]
+            self.assertEqual(info[0], "EMS – Dom – " + label)
+            self.assertEqual(info[1], unit)
+            self.assertEqual(info[3], device_class)
+            self.assertEqual(info[4], state_class)
+            self.assertGreater(len(ems.EMS_DOM_STAGE_2_DESCRIPTIONS[key]), 50)
+
+    def test_stage_2_diagnostic_keys_are_only_technical_fields(self):
+        expected = {
+            "A_ACT_POW_FL_1",
+            "B_ACT_POW_FL_1",
+            "C_ACT_POW_FL_1",
+            "POS_ACT_POW_FACTOR",
+            "REV_ACT_POW_FACTOR",
+            "TOTAL_ACT_POW_FACTOR",
+        }
+        self.assertEqual(ems.EMS_DOM_STAGE_2_DIAGNOSTIC_KEYS, expected)
+        self.assertNotIn("POS_REAC_POW_FL_1", expected)
+        self.assertNotIn("REW_REAC_POW_FL_1", expected)
+        self.assertTrue(expected.issubset(ems.EMS_DOM_SENSOR_DEFINITIONS))
+
+    def test_stage_2_real_log_samples_keep_sign_and_precision(self):
+        raw = {
+            "POS_REAC_POW_FL_1": "165.92",
+            "REW_REAC_POW_FL_1": "1321.49",
+            "A_ACT_POW_FL_1": "-0.088",
+            "B_ACT_POW_FL_1": "-0.148",
+            "C_ACT_POW_FL_1": "-0.138",
+            "POS_ACT_POW_FACTOR": "1",
+            "REV_ACT_POW_FACTOR": "1",
+            "TOTAL_ACT_POW_FACTOR": "-1",
+        }
+        for key, value in raw.items():
+            self.assertEqual(ems.parse_ems_numeric(value), float(value))
+        self.assertEqual(ems.parse_ems_numeric(None), None)
+        self.assertEqual(ems.parse_ems_numeric("not a number"), None)
 
     def test_energy_counters_are_kwh_and_total_increasing(self):
         for key in ("POS_ACT_POW_FL_1", "REW_ACT_POW_FL_1"):
