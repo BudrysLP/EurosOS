@@ -17,10 +17,54 @@ spec.loader.exec_module(ems)
 
 
 class EmsMeterTests(unittest.TestCase):
-    def test_exactly_ten_home_meter_sensors(self):
-        self.assertEqual(len(ems.EMS_DOM_SENSOR_DEFINITIONS), 10)
+    def test_25_home_meter_sensors_without_changing_existing_ten(self):
+        self.assertEqual(len(ems.EMS_DOM_SENSOR_DEFINITIONS), 25)
+        self.assertEqual(len(ems.EMS_DOM_STAGE_1_DESCRIPTIONS), 15)
         self.assertEqual(ems.EMS_DOM_DEVICE_NAME, "EMS – Dom")
         self.assertEqual(ems.EMS_DOM_METER_NAME, "METER_1")
+
+    def test_stage_1_sensor_names_types_units(self):
+        fields = {
+            "AB_LINE_VOLT_FL_1": ("Napięcie L1–L2", "V", "voltage"),
+            "BC_LINE_VOLT_FL_1": ("Napięcie L2–L3", "V", "voltage"),
+            "CA_LINE_VOLT_FL_1": ("Napięcie L3–L1", "V", "voltage"),
+            "A_PHA_ACT_POW_FL_1": ("Moc czynna L1", "kW", "power"),
+            "B_PHA_ACT_POW_FL_1": ("Moc czynna L2", "kW", "power"),
+            "C_PHA_ACT_POW_FL_1": ("Moc czynna L3", "kW", "power"),
+            "TOTAL_RACT_POW_FL_1": ("Moc bierna całkowita", "kvar", "reactive_power"),
+            "A_PHA_VIEW_POW_FL_1": ("Moc pozorna L1", "kVA", "apparent_power"),
+            "B_PHA_VIEW_POW_FL_1": ("Moc pozorna L2", "kVA", "apparent_power"),
+            "C_PHA_VIEW_POW_FL_1": ("Moc pozorna L3", "kVA", "apparent_power"),
+            "TOTAL_APPA_POWER_FL_1": ("Moc pozorna całkowita", "kVA", "apparent_power"),
+            "A_PHA_POW_FAC_FL_1": ("Współczynnik mocy L1", None, "power_factor"),
+            "B_PHA_POW_FAC_FL_1": ("Współczynnik mocy L2", None, "power_factor"),
+            "C_PHA_POW_FAC_FL_1": ("Współczynnik mocy L3", None, "power_factor"),
+            "TOTAL_POW_FAC_FL_1": ("Współczynnik mocy całkowity", None, "power_factor"),
+        }
+        self.assertEqual(len(fields), 15)
+        self.assertEqual(set(ems.EMS_DOM_STAGE_1_DESCRIPTIONS), set(fields))
+        for key, (label, unit, device_class) in fields.items():
+            name, actual_unit, _, actual_class, state_class = (
+                ems.EMS_DOM_SENSOR_DEFINITIONS[key]
+            )
+            self.assertEqual(name, "EMS – Dom – " + label)
+            self.assertEqual(actual_unit, unit)
+            self.assertEqual(actual_class, device_class)
+            self.assertEqual(state_class, "measurement")
+            self.assertGreater(len(ems.EMS_DOM_STAGE_1_DESCRIPTIONS[key]), 30)
+
+    def test_meter_values_preserve_signed_phase_measurements(self):
+        sample = {
+            "A_PHA_ACT_POW_FL_1": "-0.015",
+            "B_PHA_ACT_POW_FL_1": "0.073",
+            "C_PHA_ACT_POW_FL_1": "0.008",
+            "TOTAL_RACT_POW_FL_1": "-0.365",
+            "TOTAL_POW_FAC_FL_1": "0.126",
+            "AB_LINE_VOLT_FL_1": "407.9",
+        }
+        for key, raw in sample.items():
+            self.assertIn(key, ems.EMS_DOM_SENSOR_DEFINITIONS)
+            self.assertEqual(ems.parse_ems_numeric(raw), float(raw))
 
     def test_energy_counters_are_kwh_and_total_increasing(self):
         for key in ("POS_ACT_POW_FL_1", "REW_ACT_POW_FL_1"):
