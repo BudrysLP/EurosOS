@@ -11,6 +11,72 @@ from collections.abc import Mapping
 GEO_DEVICE_TYPE = "FriskoGEO"
 GEO_MANUFACTURER = "Euros Energy"
 
+
+# P1 audit (2026-10-29): GEO_1 does not report these five readings in 357
+# sampled /Dev messages. Retain existing HA entities and unique IDs, but show
+# unavailable rather than inventing an electrical or refrigerant measurement.
+# Do not alias these fields to the whole-home METER_1.
+GEO_P1_UNVERIFIED_SENSOR_KEYS = frozenset({
+    "ZM_AC_IN_VOL",
+    "ZM_AC_IN_CUR",
+    "ZM_AC_IN_PWR",
+    "ZM_AC_IN_ENERGY",
+    "ZM_SUCT_TEMP",
+})
+
+_GEO_STATE_REQUIRED_KEYS = (
+    "SBF_DHS",
+    "SBF_DHX",
+    "SBF_OOF",
+    "SBB_QHW",
+    "SXF_TOE",
+    "SBB_QHT",
+    "SBB_QHL",
+)
+
+
+def calculate_geo_operating_state(data: Mapping[str, object] | None) -> str | None:
+    """Derive the existing CWU/CO/IDLE state only from complete binary data.
+
+    An incomplete or malformed /Dev packet is not evidence of IDLE. Keep the
+    original state priority and meanings for fully valid FriskoGEO packets.
+    This helper is read-only and does not affect heat-pump control commands.
+    """
+    if not isinstance(data, Mapping):
+        return None
+
+    flags = {}
+    for key in _GEO_STATE_REQUIRED_KEYS:
+        raw = data.get(key)
+        # Only actual 0/1 readings are accepted; do not turn None or blanks
+        # into 0, and do not silently accept floats or out-of-range integers.
+        if isinstance(raw, bool):
+            return None
+        if isinstance(raw, int):
+            value = raw
+        elif isinstance(raw, str) and raw.strip() in ("0", "1"):
+            value = int(raw.strip())
+        else:
+            return None
+        if value not in (0, 1):
+            return None
+        flags[key] = value
+
+    if (
+        flags["SBF_DHS"] == 1
+        and flags["SBF_DHX"] == 1
+        and flags["SBF_OOF"] == 1
+        and flags["SBB_QHW"] == 1
+    ):
+        return "CWU"
+    if (
+        flags["SXF_TOE"] == 1
+        and flags["SBF_OOF"] == 1
+        and (flags["SBB_QHT"] == 1 or flags["SBB_QHL"] == 1)
+    ):
+        return "CO"
+    return "IDLE"
+
 # Values from air-source hardware that are not applicable to ground-source GEO pumps.
 GEO_EXCLUDED_ENTITIES = frozenset({
     "ZM_FAN1_SPE",
