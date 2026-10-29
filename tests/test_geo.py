@@ -38,6 +38,18 @@ class GeoSensorTests(unittest.TestCase):
         self.assertNotIn("STATE", geo.GEO_EXCLUDED_ENTITIES)
         self.assertTrue(geo.entity_supported_for_device("STATE", "FriskoGEO"))
 
+    def test_p1_state_sensor_is_really_wired_to_safe_geo_helper(self):
+        """Regression guard: testing geo.py alone did not update the HA sensor."""
+        sensor_source = (
+            MODULE_PATH.parent / "sensor.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("    calculate_geo_operating_state,", sensor_source)
+        self.assertIn("if self.device_type == GEO_DEVICE_TYPE:", sensor_source)
+        self.assertIn("return calculate_geo_operating_state(data)", sensor_source)
+        self.assertIn("device_type=device_type", sensor_source)
+        self.assertIn('self._attr_unique_id = f"{unique_prefix}_{key.lower()}"', sensor_source)
+        self.assertIn('if self.key == "STATE":', sensor_source)
+
     def test_p1_geo_state_with_complete_realistic_log_flags_is_idle(self):
         sample = {
             "SBF_DHS": "1",
