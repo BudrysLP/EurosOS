@@ -17,7 +17,7 @@ spec.loader.exec_module(geo)
 
 
 class GeoSensorTests(unittest.TestCase):
-    def test_p1_unverified_readings_keep_their_geo_entity_ids(self):
+    def test_p1_unverified_readings_excluded_for_geo_only(self):
         expected = {
             "ZM_AC_IN_VOL",
             "ZM_AC_IN_CUR",
@@ -26,10 +26,17 @@ class GeoSensorTests(unittest.TestCase):
             "ZM_SUCT_TEMP",
         }
         self.assertEqual(geo.GEO_P1_UNVERIFIED_SENSOR_KEYS, expected)
-        # These are deliberately not excluded from entity creation. Their
-        # previous HA unique_id and history must remain present.
+        # Exactly like the historic air-source fans: do not recreate the
+        # GEO entities. Their registry IDs and recorded history are untouched.
         for key in expected:
-            self.assertTrue(geo.entity_supported_for_device(key, geo.GEO_DEVICE_TYPE))
+            self.assertIn(key, geo.GEO_EXCLUDED_ENTITIES)
+            self.assertFalse(geo.entity_supported_for_device(key, geo.GEO_DEVICE_TYPE))
+            self.assertTrue(geo.entity_supported_for_device(key, "FriskoATMO"))
+            self.assertTrue(geo.entity_supported_for_device(key, None))
+
+    def test_geo_still_creates_operating_state_sensor(self):
+        self.assertNotIn("STATE", geo.GEO_EXCLUDED_ENTITIES)
+        self.assertTrue(geo.entity_supported_for_device("STATE", "FriskoGEO"))
 
     def test_p1_geo_state_with_complete_realistic_log_flags_is_idle(self):
         sample = {
