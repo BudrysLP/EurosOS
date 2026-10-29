@@ -14,7 +14,9 @@ Description : Custom integration for EurosEnergy and E-On devices.
 
 import logging
 import time
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import RestoreSensor, SensorEntity
+from homeassistant.helpers.event import async_track_time_change
+from homeassistant.util import dt as dt_util
 from homeassistant.core import callback
 from .const import DOMAIN, CONF_KEY, CONF_IP, SENSORS_VARIABLES, MQTT_TIMEOUT
 from .coordinator import EurosOSMQTTCoordinator
@@ -22,6 +24,8 @@ from .ems import (
     EMS_DOM_DEVICE_NAME,
     EMS_DOM_METER_NAME,
     EMS_DOM_SENSOR_DEFINITIONS,
+    EMS_DOM_DAILY_SENSOR_DEFINITIONS,
+    accumulate_ems_daily_energy,
     parse_ems_numeric,
 )
 from .geo import (
@@ -80,6 +84,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for key, info in EMS_DOM_SENSOR_DEFINITIONS.items():
             entities.append(
                 EurosOSEMSMeterSensor(
+                    coordinator, EMS_DOM_METER_NAME, key, info,
+                    unique_prefix, meter_device_info,
+                )
+            )
+        for key, info in EMS_DOM_DAILY_SENSOR_DEFINITIONS.items():
+            entities.append(
+                EurosOSEMSDailyEnergySensor(
                     coordinator, EMS_DOM_METER_NAME, key, info,
                     unique_prefix, meter_device_info,
                 )
@@ -276,4 +287,131 @@ class EurosOSEMSMeterSensor(SensorEntity):
             self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     async def async_will_remove_from_hass(self):
+        self.coordinator.async_remove_listener(self._handle_coordinator_update)
+
+
+class EurosOSEMSDailyEnergySensor(RestoreSensor):
+    """Daily home grid import/export energy, derived from METER_1 lifetime kWh.
+
+    The counter starts at the first available meter reading on installation
+    and restores its current-day state after HA restarts. Midnight rollover
+    follows the HA configured local timezone. Never publishes MQTT commands.
+    """
+
+    _attr_should_poll = False
+
+    def __init__(self, coordinator, meter_name, key, info, unique_prefix, device_info):
+        self.coordinator = coordinator
+        self.meter_name = meter_name
+        self.key = key
+        name, icon = info
+        self._attr_name = name
+        self._attr_icon = icon
+        self._attr_device_class = "energy"
+        self._attr_state_class = "total_increasing"
+        self._attr_native_unit_of_measurement = "kWh"
+        self._attr_suggested_display_precision = 2
+        self._attr_unique_id = (
+            f"{unique_prefix}_ems_{meter_name.lower()}_daily_{key.lower()}"
+        )
+        self._attr_device_info = device_info
+
+        self._day = dt_util.now().date().isoformat()
+        self._last_meter_total = None
+        self._attr_native_value = None
+        self._active = False
+        coordinator.async_add_listener(self._handle_coordinator_update)
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "ems_day": self._day,
+            "last_meter_kwh": self._last_meter_total,
+            "meter": self.meter_name,
+        }
+
+    @property
+    def available(self):
+        last_update = getattr(self.coordinator, "_last_update", None)
+        readings = self.coordinator.ems_meters.get(self.meter_name)
+        return (
+            last_update is not None
+            and time.time() - last_update <= MQTT_TIMEOUT
+            and isinstance(readings, dict)
+            and parse_ems_numeric(readings.get(self.key)) is not None
+            and self.native_value is not None
+        )
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        restored = await self.async_get_last_state()
+        today = dt_util.now().date().isoformat()
+        if restored is not None and restored.attributes.get("ems_day") == today:
+            restored_value = parse_ems_numeric(restored.state)
+            restored_total = parse_ems_numeric(
+                restored.attributes.get("last_meter_kwh")
+            )
+            if (
+                restored_value is not None
+                and restored_value >= 0
+                and restored_total is not None
+                and restored_total >= 0
+            ):
+                self._day = today
+                self._attr_native_value = restored_value
+                self._last_meter_total = restored_total
+
+        self._active = True
+        self.async_on_remove(
+            async_track_time_change(
+                self.hass, self._reset_at_midnight, hour=0, minute=0, second=0
+            )
+        )
+        self._refresh_from_meter()
+
+    @callback
+    def _reset_at_midnight(self, now):
+        """Start a new local day, retaining the last metered value as baseline."""
+        if not self._active:
+            return
+        self._day = dt_util.now().date().isoformat()
+        self._attr_native_value = 0.0
+        # Retaining the previous counter avoids missing the first post-midnight
+        # increment while HA is running; its timestamp can straddle midnight.
+        self.async_write_ha_state()
+
+    @callback
+    def _refresh_from_meter(self):
+        if not self._active:
+            return
+        readings = self.coordinator.ems_meters.get(self.meter_name)
+        if not isinstance(readings, dict):
+            self.async_write_ha_state()
+            return
+        raw = parse_ems_numeric(readings.get(self.key))
+        if raw is None or raw < 0:
+            self.async_write_ha_state()
+            return
+
+        today = dt_util.now().date().isoformat()
+        day, value, last = accumulate_ems_daily_energy(
+            self._day, self._attr_native_value,
+            self._last_meter_total, today, raw
+        )
+        self._day = day
+        self._attr_native_value = value
+        self._last_meter_total = last
+        self.async_write_ha_state()
+
+    @callback
+    def _handle_coordinator_update(self):
+        if (
+            self._active
+            and self.hass
+            and not self.hass.loop.is_closed()
+        ):
+            self.hass.loop.call_soon_threadsafe(self._refresh_from_meter)
+
+    async def async_will_remove_from_hass(self):
+        self._active = False
         self.coordinator.async_remove_listener(self._handle_coordinator_update)
