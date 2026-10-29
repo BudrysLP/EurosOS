@@ -27,6 +27,56 @@ EMS_DOM_SENSOR_DEFINITIONS = {
 }
 
 
+# Derived daily counters on the same device, updated from the lifetime kWh meters.
+# All measurements are grid import/export for the entire home, not heat pump usage.
+EMS_DOM_DAILY_SENSOR_DEFINITIONS = {
+    "POS_ACT_POW_FL_1": (
+        "EMS – Dom – Energia pobrana dzisiaj",
+        "mdi:transmission-tower-import",
+    ),
+    "REW_ACT_POW_FL_1": (
+        "EMS – Dom – Energia oddana dzisiaj",
+        "mdi:transmission-tower-export",
+    ),
+}
+
+
+def accumulate_ems_daily_energy(day, accumulated, previous_meter_total, today, raw_total):
+    """Pure incremental daily totalizer for a cumulative physical kWh meter.
+
+    Returns (local_day, accumulated_kwh, last_meter_kwh).
+    The first reading after enabling a daily sensor (or an HA outage spanning
+    midnight) establishes a baseline. The first such day is incomplete.
+    Small negative fluctuations are ignored; significant counter resets
+    rebase without injecting a huge fictitious daily consumption.
+    """
+    value = parse_ems_numeric(raw_total)
+    if value is None or value < 0:
+        return day, accumulated, previous_meter_total
+
+    if day != today:
+        return today, 0.0, value
+
+    if previous_meter_total is None:
+        return today, max(0.0, float(accumulated or 0.0)), value
+
+    previous = parse_ems_numeric(previous_meter_total)
+    if previous is None or previous < 0:
+        return today, max(0.0, float(accumulated or 0.0)), value
+
+    if value >= previous:
+        increment = value - previous
+        return today, round(max(0.0, float(accumulated or 0.0)) + increment, 4), value
+
+    # Ignore small negative fluctuations without lowering the reference total.
+    if previous - value < max(0.05, previous * 0.01):
+        return today, max(0.0, float(accumulated or 0.0)), previous
+
+    # A large drop means a physical meter reset/replacement or data discontinuity.
+    # Keep the accrued daily amount and treat this sample as a new baseline.
+    return today, max(0.0, float(accumulated or 0.0)), value
+
+
 def extract_ems_meters(devices):
     """Return current METER_N -> Data mappings; ignore the pump and unknown devices.
 
