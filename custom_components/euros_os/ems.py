@@ -24,6 +24,43 @@ EMS_DOM_SENSOR_DEFINITIONS = {
     "B_PHA_CUR_FL_1": ("EMS – Dom – Prąd L2", "A", "mdi:current-ac", "current", "measurement"),
     "C_PHA_CUR_FL_1": ("EMS – Dom – Prąd L3", "A", "mdi:current-ac", "current", "measurement"),
     "FREQUENCY_FL_1": ("EMS – Dom – Częstotliwość sieci", "Hz", "mdi:sine-wave", "frequency", "measurement"),
+    # Stage 1: fifteen additional directly reported electrical measurements.
+    "AB_LINE_VOLT_FL_1": ("EMS – Dom – Napięcie L1–L2", "V", "mdi:flash", "voltage", "measurement"),
+    "BC_LINE_VOLT_FL_1": ("EMS – Dom – Napięcie L2–L3", "V", "mdi:flash", "voltage", "measurement"),
+    "CA_LINE_VOLT_FL_1": ("EMS – Dom – Napięcie L3–L1", "V", "mdi:flash", "voltage", "measurement"),
+    "A_PHA_ACT_POW_FL_1": ("EMS – Dom – Moc czynna L1", "kW", "mdi:flash", "power", "measurement"),
+    "B_PHA_ACT_POW_FL_1": ("EMS – Dom – Moc czynna L2", "kW", "mdi:flash", "power", "measurement"),
+    "C_PHA_ACT_POW_FL_1": ("EMS – Dom – Moc czynna L3", "kW", "mdi:flash", "power", "measurement"),
+    "TOTAL_RACT_POW_FL_1": ("EMS – Dom – Moc bierna całkowita", "kvar", "mdi:sine-wave", "reactive_power", "measurement"),
+    "A_PHA_VIEW_POW_FL_1": ("EMS – Dom – Moc pozorna L1", "kVA", "mdi:flash-outline", "apparent_power", "measurement"),
+    "B_PHA_VIEW_POW_FL_1": ("EMS – Dom – Moc pozorna L2", "kVA", "mdi:flash-outline", "apparent_power", "measurement"),
+    "C_PHA_VIEW_POW_FL_1": ("EMS – Dom – Moc pozorna L3", "kVA", "mdi:flash-outline", "apparent_power", "measurement"),
+    "TOTAL_APPA_POWER_FL_1": ("EMS – Dom – Moc pozorna całkowita", "kVA", "mdi:flash-outline", "apparent_power", "measurement"),
+    "A_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L1", null, "mdi:angle-acute", "power_factor", "measurement"),
+    "B_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L2", null, "mdi:angle-acute", "power_factor", "measurement"),
+    "C_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L3", null, "mdi:angle-acute", "power_factor", "measurement"),
+    "TOTAL_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy całkowity", null, "mdi:angle-acute", "power_factor", "measurement"),
+}
+
+
+# Human-readable measurement descriptions used by the EMS inventory/documentation.
+# The first ten stable sensor definitions and their IDs remain unchanged.
+EMS_DOM_STAGE_1_DESCRIPTIONS = {
+    "AB_LINE_VOLT_FL_1": "Napięcie międzyfazowe pomiędzy fazami L1 i L2 mierzone przez licznik EMS na przyłączu całego domu.",
+    "BC_LINE_VOLT_FL_1": "Napięcie międzyfazowe pomiędzy fazami L2 i L3 mierzone przez licznik EMS na przyłączu całego domu.",
+    "CA_LINE_VOLT_FL_1": "Napięcie międzyfazowe pomiędzy fazami L3 i L1 mierzone przez licznik EMS na przyłączu całego domu.",
+    "A_PHA_ACT_POW_FL_1": "Moc czynna przepływająca na fazie L1 w punkcie licznika EMS domu; wartość może mieć znak dodatni lub ujemny.",
+    "B_PHA_ACT_POW_FL_1": "Moc czynna przepływająca na fazie L2 w punkcie licznika EMS domu; wartość może mieć znak dodatni lub ujemny.",
+    "C_PHA_ACT_POW_FL_1": "Moc czynna przepływająca na fazie L3 w punkcie licznika EMS domu; wartość może mieć znak dodatni lub ujemny.",
+    "TOTAL_RACT_POW_FL_1": "Łączna chwilowa moc bierna zmierzona na przyłączu całego domu; zachowujemy znak raportowany przez licznik.",
+    "A_PHA_VIEW_POW_FL_1": "Moc pozorna na fazie L1 na przyłączu domu, obejmująca składowe czynną i bierną.",
+    "B_PHA_VIEW_POW_FL_1": "Moc pozorna na fazie L2 na przyłączu domu, obejmująca składowe czynną i bierną.",
+    "C_PHA_VIEW_POW_FL_1": "Moc pozorna na fazie L3 na przyłączu domu, obejmująca składowe czynną i bierną.",
+    "TOTAL_APPA_POWER_FL_1": "Łączna chwilowa moc pozorna na przyłączu domu, raportowana bezpośrednio przez EMS.",
+    "A_PHA_POW_FAC_FL_1": "Bezwymiarowy współczynnik mocy (cos φ / PF) fazy L1; zachowujemy znak raportowany przez EMS.",
+    "B_PHA_POW_FAC_FL_1": "Bezwymiarowy współczynnik mocy (cos φ / PF) fazy L2; zachowujemy znak raportowany przez EMS.",
+    "C_PHA_POW_FAC_FL_1": "Bezwymiarowy współczynnik mocy (cos φ / PF) fazy L3; zachowujemy znak raportowany przez EMS.",
+    "TOTAL_POW_FAC_FL_1": "Łączny współczynnik mocy na przyłączu domu; wartości od −1 do 1, o ile raportowane przez EMS.",
 }
 
 
