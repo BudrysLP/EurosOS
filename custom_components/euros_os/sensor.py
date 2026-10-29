@@ -15,6 +15,7 @@ Description : Custom integration for EurosEnergy and E-On devices.
 import logging
 import time
 from homeassistant.components.sensor import RestoreSensor, SensorEntity
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 from homeassistant.core import callback
@@ -26,6 +27,8 @@ from .ems import (
     EMS_DOM_SENSOR_DEFINITIONS,
     EMS_DOM_DAILY_SENSOR_DEFINITIONS,
     EMS_DOM_STAGE_1_DESCRIPTIONS,
+    EMS_DOM_STAGE_2_DESCRIPTIONS,
+    EMS_DOM_STAGE_2_DIAGNOSTIC_KEYS,
     accumulate_ems_daily_energy,
     parse_ems_numeric,
 )
@@ -266,6 +269,14 @@ class EurosOSEMSMeterSensor(SensorEntity):
                 "opis": EMS_DOM_STAGE_1_DESCRIPTIONS[key],
                 "licznik": EMS_DOM_METER_NAME,
             }
+        elif key in EMS_DOM_STAGE_2_DESCRIPTIONS:
+            self._attr_extra_state_attributes = {
+                "opis": EMS_DOM_STAGE_2_DESCRIPTIONS[key],
+                "licznik": EMS_DOM_METER_NAME,
+                "parametr_mqtt": key,
+            }
+            if key in EMS_DOM_STAGE_2_DIAGNOSTIC_KEYS:
+                self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_unique_id = f"{unique_prefix}_ems_{meter_name.lower()}_{key.lower()}"
         self._attr_device_info = device_info
 
