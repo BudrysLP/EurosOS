@@ -18,6 +18,12 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import callback
 from .const import DOMAIN, CONF_KEY, CONF_IP, SENSORS_VARIABLES, MQTT_TIMEOUT
 from .coordinator import EurosOSMQTTCoordinator
+from .ems import (
+    EMS_DOM_DEVICE_NAME,
+    EMS_DOM_METER_NAME,
+    EMS_DOM_SENSOR_DEFINITIONS,
+    parse_ems_numeric,
+)
 from .geo import (
     GEO_DEVICE_TYPE,
     GEO_GROUND_SOURCE_DELTA_T,
@@ -59,6 +65,23 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     (label, "°C", "mdi:delta", "temperature"),
                     unique_prefix,
                     device_info,
+                )
+            )
+
+    if device_type == GEO_DEVICE_TYPE:
+        # A separate logical device: METER_1 measures the entire grid connection,
+        # not the electricity consumption of the heat pump alone.
+        meter_device_info = {
+            "identifiers": {(DOMAIN, f"{unique_prefix}_ems_meter_1")},
+            "name": EMS_DOM_DEVICE_NAME,
+            "model": EMS_DOM_METER_NAME,
+            "via_device": (DOMAIN, unique_prefix),
+        }
+        for key, info in EMS_DOM_SENSOR_DEFINITIONS.items():
+            entities.append(
+                EurosOSEMSMeterSensor(
+                    coordinator, EMS_DOM_METER_NAME, key, info,
+                    unique_prefix, meter_device_info,
                 )
             )
 
@@ -208,6 +231,48 @@ class EurosOSSensor(SensorEntity):
     @callback
     def _handle_coordinator_update(self):
         if self.hass:
+            self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
+
+    async def async_will_remove_from_hass(self):
+        self.coordinator.async_remove_listener(self._handle_coordinator_update)
+
+class EurosOSEMSMeterSensor(SensorEntity):
+    """Read-only, directly metered electricity measurements for the whole home."""
+
+    def __init__(self, coordinator, meter_name, key, info, unique_prefix, device_info):
+        self.coordinator = coordinator
+        self.meter_name = meter_name
+        self.key = key
+        name, unit, icon, device_class, state_class = info
+        self._attr_name = name
+        self._attr_native_unit_of_measurement = unit
+        self._attr_icon = icon
+        self._attr_device_class = device_class
+        self._attr_state_class = state_class
+        self._attr_unique_id = f"{unique_prefix}_ems_{meter_name.lower()}_{key.lower()}"
+        self._attr_device_info = device_info
+
+        coordinator.async_add_listener(self._handle_coordinator_update)
+
+    @property
+    def native_value(self):
+        readings = self.coordinator.ems_meters.get(self.meter_name)
+        if not isinstance(readings, dict):
+            return None
+        return parse_ems_numeric(readings.get(self.key))
+
+    @property
+    def available(self):
+        last_update = getattr(self.coordinator, "_last_update", None)
+        return (
+            last_update is not None
+            and time.time() - last_update <= MQTT_TIMEOUT
+            and self.native_value is not None
+        )
+
+    @callback
+    def _handle_coordinator_update(self):
+        if self.hass and not self.hass.loop.is_closed():
             self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     async def async_will_remove_from_hass(self):
