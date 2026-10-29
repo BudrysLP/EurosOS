@@ -40,6 +40,16 @@ EMS_DOM_SENSOR_DEFINITIONS = {
     "B_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L2", None, "mdi:angle-acute", "power_factor", "measurement"),
     "C_PHA_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy L3", None, "mdi:angle-acute", "power_factor", "measurement"),
     "TOTAL_POW_FAC_FL_1": ("EMS – Dom – Współczynnik mocy całkowity", None, "mdi:angle-acute", "power_factor", "measurement"),
+    # Stage 2: raw reactive energy counters from METER_1 (units in kvarh).
+    "POS_REAC_POW_FL_1": ("EMS – Dom – Energia bierna dodatnia", "kvarh", "mdi:counter", "reactive_energy", "total_increasing"),
+    "REW_REAC_POW_FL_1": ("EMS – Dom – Energia bierna ujemna", "kvarh", "mdi:counter", "reactive_energy", "total_increasing"),
+    # Six diagnostic fields, deliberately not interpreted as regular grid power or PF.
+    "A_ACT_POW_FL_1": ("EMS – Dom – Moc L1 – odczyt techniczny", "kW", "mdi:chart-line", "power", "measurement"),
+    "B_ACT_POW_FL_1": ("EMS – Dom – Moc L2 – odczyt techniczny", "kW", "mdi:chart-line", "power", "measurement"),
+    "C_ACT_POW_FL_1": ("EMS – Dom – Moc L3 – odczyt techniczny", "kW", "mdi:chart-line", "power", "measurement"),
+    "POS_ACT_POW_FACTOR": ("EMS – Dom – Współczynnik POS – techniczny", None, "mdi:cog-outline", None, None),
+    "REV_ACT_POW_FACTOR": ("EMS – Dom – Współczynnik REV – techniczny", None, "mdi:cog-outline", None, None),
+    "TOTAL_ACT_POW_FACTOR": ("EMS – Dom – Współczynnik TOTAL – techniczny", None, "mdi:cog-outline", None, None),
 }
 
 
@@ -62,6 +72,30 @@ EMS_DOM_STAGE_1_DESCRIPTIONS = {
     "C_PHA_POW_FAC_FL_1": "Bezwymiarowy współczynnik mocy (cos φ / PF) fazy L3; zachowujemy znak raportowany przez EMS.",
     "TOTAL_POW_FAC_FL_1": "Łączny współczynnik mocy na przyłączu domu; wartości od −1 do 1, o ile raportowane przez EMS.",
 }
+
+
+# Stage 2 field names and comments derived from the actual METER_1 /Dev log.
+# Raw technical power channels do NOT match the A/B/C_PHA_ACT_POW_FL_1 values.
+# POS/REV/TOTAL factors are 1/1/-1 across all 1659 sampled packets;
+# their detailed controller semantics must not be inferred from those numbers.
+EMS_DOM_STAGE_2_DESCRIPTIONS = {
+    "POS_REAC_POW_FL_1": "Narastający licznik energii biernej o kierunku dodatnim z METER_1, w kvarh. Nie interpretować znaku jako rodzaju obciążenia bez dokumentacji licznika.",
+    "REW_REAC_POW_FL_1": "Narastający licznik energii biernej o kierunku ujemnym z METER_1, w kvarh. Nie interpretować znaku jako rodzaju obciążenia bez dokumentacji licznika.",
+    "A_ACT_POW_FL_1": "Surowy dodatkowy kanał mocy A (L1) w kW, inny od A_PHA_ACT_POW_FL_1. Znaczenie techniczne niepotwierdzone; nie używać do bilansu domu.",
+    "B_ACT_POW_FL_1": "Surowy dodatkowy kanał mocy B (L2) w kW, inny od B_PHA_ACT_POW_FL_1. Znaczenie techniczne niepotwierdzone; nie używać do bilansu domu.",
+    "C_ACT_POW_FL_1": "Surowy dodatkowy kanał mocy C (L3) w kW, inny od C_PHA_ACT_POW_FL_1. Znaczenie techniczne niepotwierdzone; nie używać do bilansu domu.",
+    "POS_ACT_POW_FACTOR": "Stały w logach parametr techniczny POS (1); nie jest to współczynnik mocy fazy ani zużycie energii. Znaczenie niepotwierdzone.",
+    "REV_ACT_POW_FACTOR": "Stały w logach parametr techniczny REV (1); nie jest to współczynnik mocy fazy ani zużycie energii. Znaczenie niepotwierdzone.",
+    "TOTAL_ACT_POW_FACTOR": "Stały w logach parametr techniczny TOTAL (-1); nie jest to bilans mocy ani zużycie energii. Znaczenie niepotwierdzone.",
+}
+EMS_DOM_STAGE_2_DIAGNOSTIC_KEYS = frozenset({
+    "A_ACT_POW_FL_1",
+    "B_ACT_POW_FL_1",
+    "C_ACT_POW_FL_1",
+    "POS_ACT_POW_FACTOR",
+    "REV_ACT_POW_FACTOR",
+    "TOTAL_ACT_POW_FACTOR",
+})
 
 
 # Derived daily counters on the same device, updated from the lifetime kWh meters.
