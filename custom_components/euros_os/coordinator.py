@@ -23,6 +23,7 @@ import paho.mqtt.client as mqtt
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import callback
 from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD
+from .ems import extract_ems_meters
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
 
@@ -73,6 +74,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         self.ip = ip
         self.topic = topic
         self.device = {}
+        self.ems_meters = {}  # Current read-only METER_N data, separate from GEO.
         self.client = None
         self.connected = threading.Event()
         self._last_update = None
@@ -180,9 +182,11 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         def on_message(client, userdata, msg):
             try:
                 payload = json.loads(msg.payload)
-                if "Devices" in payload:
-                    self._log_ems_diagnostics(payload["Devices"])
-                    self.device = payload["Devices"][0]
+                devices = payload.get("Devices")
+                if isinstance(devices, list) and devices:
+                    self._log_ems_diagnostics(devices)
+                    self.ems_meters = extract_ems_meters(devices)
+                    self.device = devices[0]
                     self._last_update = time.time()
                     _LOGGER.debug("Received MQTT payload: %s", self.device)
                     self._notify_listeners()
