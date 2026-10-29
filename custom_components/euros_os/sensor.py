@@ -25,6 +25,7 @@ from .ems import (
     EMS_DOM_METER_NAME,
     EMS_DOM_SENSOR_DEFINITIONS,
     EMS_DOM_DAILY_SENSOR_DEFINITIONS,
+    EMS_DOM_STAGE_1_DESCRIPTIONS,
     accumulate_ems_daily_energy,
     parse_ems_numeric,
 )
@@ -260,6 +261,11 @@ class EurosOSEMSMeterSensor(SensorEntity):
         self._attr_icon = icon
         self._attr_device_class = device_class
         self._attr_state_class = state_class
+        if key in EMS_DOM_STAGE_1_DESCRIPTIONS:
+            self._attr_extra_state_attributes = {
+                "opis": EMS_DOM_STAGE_1_DESCRIPTIONS[key],
+                "licznik": EMS_DOM_METER_NAME,
+            }
         self._attr_unique_id = f"{unique_prefix}_ems_{meter_name.lower()}_{key.lower()}"
         self._attr_device_info = device_info
 
