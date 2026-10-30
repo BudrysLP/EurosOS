@@ -177,20 +177,31 @@ class EurosOSSensor(SensorEntity):
                 SXF_ECO = int(data.get("SXF_ECO", 0))
                 SXF_AWA = int(data.get("SXF_AWA", 0))
                 SXF_TIME = int(data.get("SXF_TIME", 0))
-        
-                if SBF_OOF == 1 and SXF_ECO == 0 and SXF_AWA == 0 and SXF_TIME == 0:
-                    return "AUTO"
-                elif SBF_OOF == 1 and SXF_ECO == 1 and SXF_AWA == 0:
-                    return "ECO"
+
+                # GEO / EMS Expert: observed in the 2026-10-30 AUTO/EMS tests.
+                # This is a read-only, provisional mapping. Never infer EMS
+                # from a missing/invalid U_ENE_TAR field.
+                energy_tariff = data.get("U_ENE_TAR")
+
+                if SBF_OOF == 0:
+                    return "OFF"
                 elif SBF_OOF == 1 and SXF_TIME == 1:
                     return "TIME"
                 elif SBF_OOF == 1 and SXF_AWA == 1:
                     return "AWAY"
-                elif SBF_OOF == 0:
-                    return "OFF"
+                elif SBF_OOF == 1 and SXF_ECO == 1:
+                    return "ECO"
+                elif SBF_OOF == 1 and SXF_ECO == 0 and SXF_AWA == 0 and SXF_TIME == 0:
+                    if energy_tariff is not None:
+                        try:
+                            if int(energy_tariff) == 1:
+                                return "EMS"
+                        except (TypeError, ValueError):
+                            pass
+                    return "AUTO"
                 else:
                     return "UNKNOWN"
-            except Exception as e:
+            except (TypeError, ValueError) as e:
                 _LOGGER.warning("Error analyzing operating mode: %s", e)
                 return "UNKNOWN"
 
