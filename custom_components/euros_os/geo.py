@@ -13,8 +13,8 @@ GEO_MANUFACTURER = "Euros Energy"
 
 
 # P1 audit (2026-10-29): GEO_1 does not report these five readings in 357
-# sampled /Dev messages. Retain existing HA entities and unique IDs, but show
-# unavailable rather than inventing an electrical or refrigerant measurement.
+# sampled /Dev messages. Legacy audit keys retained for compatibility; actual
+# entity creation is controlled by GEO_EXCLUDED_ENTITIES below.
 # Do not alias these fields to the whole-home METER_1.
 GEO_P1_UNVERIFIED_SENSOR_KEYS = frozenset({
     "ZM_AC_IN_VOL",
@@ -22,10 +22,6 @@ GEO_P1_UNVERIFIED_SENSOR_KEYS = frozenset({
     "ZM_AC_IN_PWR",
     "ZM_AC_IN_ENERGY",
     "ZM_SUCT_TEMP",
-    "PWM_1",          # Legacy heating circulation pump percentage; absent in FriskoGEO MQTT
-    "ZM_CUR_COMP_FREQ",  # Compressor frequency absent from FriskoGEO MQTT; retain SIO_R06 on/off state
-    "ADC_1",          # CO pressure reading absent from FriskoGEO MQTT
-    "ADC_2",          # CWU pressure reading absent from FriskoGEO MQTT
 })
 
 _GEO_STATE_REQUIRED_KEYS = (
@@ -88,8 +84,8 @@ def calculate_geo_operating_state(data: Mapping[str, object] | None) -> str | No
 
 # GEO-specific exclusions: do not create new entities, but leave existing
 # Home Assistant registry entries and their history intact (unavailable).
-# The first three are air-source-only. The following five are P1 measurements
-# absent from the verified GEO_1 MQTT packets, NOT confirmed hardware readings.
+# The first three are air-source-only; other unavailable GEO measurements
+# and unverified writable pressure calibration controls are also excluded.
 # Keep STATE enabled: the operating-state sensor is explicitly NOT excluded.
 GEO_EXCLUDED_ENTITIES = frozenset({
     "ZM_FAN1_SPE",
@@ -100,6 +96,12 @@ GEO_EXCLUDED_ENTITIES = frozenset({
     "ZM_AC_IN_PWR",
     "ZM_AC_IN_ENERGY",
     "ZM_SUCT_TEMP",
+    "PWM_1",          # Legacy heating circulation pump percentage; absent in FriskoGEO MQTT
+    "ZM_CUR_COMP_FREQ",  # Compressor frequency absent from FriskoGEO MQTT; retain SIO_R06 on/off state
+    "ADC_1",          # CO pressure reading absent from FriskoGEO MQTT
+    "ADC_2",          # CWU pressure reading absent from FriskoGEO MQTT
+    "ADC_1_Factor_2",  # Unverified CO pressure calibration control; hide writable GEO entity
+    "ADC_2_Factor_2",  # Unverified CWU pressure calibration control; hide writable GEO entity
 })
 
 
