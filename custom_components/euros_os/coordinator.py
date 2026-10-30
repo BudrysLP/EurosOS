@@ -23,7 +23,7 @@ import paho.mqtt.client as mqtt
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import callback
 from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD
-from .ems import extract_ems_meters
+from .ems import extract_ems_meters, parse_ems_numeric
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
 
@@ -81,6 +81,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         self._listeners = []
         self._last_ems_diagnostic = None
         self._last_ems_meter_present = None
+        self._last_ems_power_received = None
 
     # ------------------ Listeners ------------------
     def async_add_listener(self, callback):
@@ -169,6 +170,32 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
                 json.dumps(values, sort_keys=True, ensure_ascii=True, separators=(",", ":")),
             )
 
+    def _log_ems_power_sample(self, meters, received_at, received_monotonic):
+        """Log each valid METER_1 power sample only when DEBUG is enabled.
+
+        Times represent MQTT reception, not the physical meter sampling time.
+        Never log the complete payload, credentials, or device identifiers.
+        """
+        if not _LOGGER.isEnabledFor(logging.DEBUG):
+            return
+        reading = meters.get("METER_1")
+        if not isinstance(reading, dict):
+            return
+        power_kw = parse_ems_numeric(reading.get("TOTAL_ACT_POW_FL_1"))
+        if power_kw is None:
+            return
+        elapsed = (
+            None if self._last_ems_power_received is None
+            else round(received_monotonic - self._last_ems_power_received, 3)
+        )
+        self._last_ems_power_received = received_monotonic
+        _LOGGER.debug(
+            "[EMS_POWER_SAMPLE] received_unix=%.3f power_kw=%.6f "
+            "power_w=%.3f delta_receive_s=%s",
+            received_at, power_kw, power_kw * 1000,
+            elapsed if elapsed is not None else "first",
+        )
+
     # ------------------ MQTT ------------------
     def connect(self):
         def on_connect(client, userdata, flags, rc):
@@ -185,9 +212,13 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
                 devices = payload.get("Devices")
                 if isinstance(devices, list) and devices:
                     self._log_ems_diagnostics(devices)
-                    self.ems_meters = extract_ems_meters(devices)
+                    received_at = time.time()
+                    received_monotonic = time.monotonic()
+                    meters = extract_ems_meters(devices)
+                    self._log_ems_power_sample(meters, received_at, received_monotonic)
+                    self.ems_meters = meters
                     self.device = devices[0]
-                    self._last_update = time.time()
+                    self._last_update = received_at
                     _LOGGER.debug("Received MQTT payload: %s", self.device)
                     self._notify_listeners()
             except Exception as e:
