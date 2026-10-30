@@ -26,6 +26,7 @@ GEO_BINARY_SENSOR_VARIABLES = {
     "SIO_R08": ("Pompa górnego źródła – stan pracy", "mdi:pump"),
     "SIO_R07": ("Pompa dolnego źródła – stan pracy", "mdi:pump"),
     "SIO_R03": ("Pompa cyrkulacyjna CWU – stan pracy", "mdi:pump"),
+    "SIO_R06": ("Sprężarka – stan pracy", "mdi:engine"),
     "SXF_ENACYR": ("Pompa cyrkulacyjna CWU – stan zezwolenia", "mdi:water-check"),
 }
 
