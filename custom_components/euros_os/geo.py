@@ -23,6 +23,7 @@ GEO_P1_UNVERIFIED_SENSOR_KEYS = frozenset({
     "ZM_AC_IN_ENERGY",
     "ZM_SUCT_TEMP",
     "PWM_1",          # Legacy heating circulation pump percentage; absent in FriskoGEO MQTT
+    "ZM_CUR_COMP_FREQ",  # Compressor frequency absent from FriskoGEO MQTT; retain SIO_R06 on/off state
 })
 
 _GEO_STATE_REQUIRED_KEYS = (
