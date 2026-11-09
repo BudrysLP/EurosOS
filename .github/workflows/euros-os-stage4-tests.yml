@@ -7,6 +7,7 @@ on:
       - feature/auto-pump-discovery
       - feature/dynamic-ems-discovery
       - feature/compatibility-safety
+      - feature/integration-failure-scenarios
   workflow_dispatch:
 
 permissions:
