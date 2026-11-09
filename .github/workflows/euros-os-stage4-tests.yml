@@ -9,6 +9,7 @@ on:
       - feature/compatibility-safety
       - feature/integration-failure-scenarios
       - feature/stage8-ha-preflight
+      - feature/stage9-reliability
   workflow_dispatch:
 
 permissions:
