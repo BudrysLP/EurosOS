@@ -24,7 +24,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import callback
 from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD
 from .ems import extract_ems_meters, parse_ems_numeric
-from .discovery import find_pump
+from .discovery import SUPPORTED_PUMP_TYPES, find_pump
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
 
@@ -79,6 +79,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         self._event_loop = event_loop
         self.device = {}
         self.ems_meters = {}  # Current read-only METER_N data, separate from GEO.
+        self._meter_last_update = {}  # Independent receive time for each meter.
         self.client = None
         self.connected = threading.Event()
         self._last_update = None
@@ -222,22 +223,53 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         def on_message(client, userdata, msg):
             try:
                 payload = json.loads(msg.payload)
+                if not isinstance(payload, dict):
+                    return
                 devices = payload.get("Devices")
-                if isinstance(devices, list) and devices:
-                    self._log_ems_diagnostics(devices)
-                    received_at = time.time()
-                    received_monotonic = time.monotonic()
-                    pump = find_pump(devices, expected_name=self.pump_name, expected_type=self.pump_type)
-                    if pump is None:
-                        _LOGGER.warning("No unambiguous configured pump in MQTT Devices; retaining last pump state")
+                if not isinstance(devices, list) or not devices:
+                    return
+
+                self._log_ems_diagnostics(devices)
+                received_at = time.time()
+                received_monotonic = time.monotonic()
+                pump = find_pump(
+                    devices, expected_name=self.pump_name, expected_type=self.pump_type
+                )
+                meters = extract_ems_meters(devices)
+
+                if pump is None:
+                    # Reject packets containing another/ambiguous pump. Only
+                    # unambiguous meter-only packets may update EMS separately.
+                    has_pump = any(
+                        isinstance(device, dict)
+                        and device.get("Type") in SUPPORTED_PUMP_TYPES
+                        for device in devices
+                    )
+                    if has_pump or not meters:
+                        _LOGGER.debug("Ignoring MQTT packet without configured pump or usable meters")
                         return
-                    meters = extract_ems_meters(devices)
-                    self._log_ems_power_sample(meters, received_at, received_monotonic)
-                    self.ems_meters = meters
+
+                    # A meter-only update must not refresh the pump's last
+                    # update time or overwrite its state; do not drop other
+                    # known meters from partial meter-only packets.
+                    self.ems_meters.update(meters)
+                    self._meter_last_update.update(
+                        {name: received_at for name in meters}
+                    )
+                else:
+                    # Pump-containing /Dev payload is a complete snapshot.
+                    # Missing meters become unavailable but registered HA
+                    # entities and their history are never deleted.
                     self.device = pump
                     self._last_update = received_at
-                    _LOGGER.debug("Received MQTT payload: %s", self.device)
-                    self._notify_listeners()
+                    self.ems_meters = meters
+                    self._meter_last_update = {
+                        name: received_at for name in meters
+                    }
+                    _LOGGER.debug("Received MQTT pump: %s", pump.get("Name"))
+
+                self._log_ems_power_sample(meters, received_at, received_monotonic)
+                self._notify_listeners()
             except Exception as e:
                 _LOGGER.warning("Invalid JSON on %s: %s", self.topic, e)
 
