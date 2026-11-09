@@ -60,6 +60,27 @@ class EmsHelperDiscoveryTests(unittest.TestCase):
         self.assertEqual(self.ems.discover_ems_sensor_keys("METER_3", {"TOTAL_ACT_POW_FL_1": "0"}), ("TOTAL_ACT_POW_FL_1",))
 
 
+class FakeRestoreSensor:
+    """Minimal HA RestoreSensor behavior used by daily-counter integration tests."""
+    hass = None
+
+    async def async_added_to_hass(self):
+        pass
+
+    async def async_get_last_state(self):
+        return getattr(self, "_restored_state", None)
+
+    def async_on_remove(self, cleanup):
+        self._test_cleanup = cleanup
+
+    def async_write_ha_state(self):
+        self._test_writes = getattr(self, "_test_writes", 0) + 1
+
+    @property
+    def native_value(self):
+        return self._attr_native_value
+
+
 class FakeCoordinator:
     def __init__(self):
         self.ems_meters = {}
@@ -98,7 +119,7 @@ class DynamicEmsPlatformTests(unittest.TestCase):
             "homeassistant.components": mod("homeassistant.components"),
             "homeassistant.components.sensor": mod("homeassistant.components.sensor",
                 SensorEntity=type("SensorEntity", (), {"hass": None}),
-                RestoreSensor=type("RestoreSensor", (), {"hass": None})),
+                RestoreSensor=FakeRestoreSensor),
             "homeassistant.helpers": mod("homeassistant.helpers"),
             "homeassistant.helpers.device_registry": mod(
                 "homeassistant.helpers.device_registry", async_get=lambda hass: cls.registry),
@@ -253,6 +274,108 @@ class DynamicEmsPlatformTests(unittest.TestCase):
         ]
         self.assertEqual(first, second)
         self.assertEqual(first, ["abcdef_ems_meter_2_total_act_pow_fl_1"])
+
+    def test_malformed_meter_reading_becomes_unavailable_not_zero(self):
+        self.setup_platform()
+        self.coordinator.ems_meters = {
+            "METER_2": {"TOTAL_ACT_POW_FL_1": "-0.125"}
+        }
+        self.coordinator.emit()
+        entity = self.batches[-1][0]
+        import time
+        self.coordinator._meter_last_update["METER_2"] = time.time()
+        self.assertEqual(entity.native_value, -0.125)
+        self.assertTrue(entity.available)
+        count = len(self.batches)
+
+        for malformed in (None, "NaN", "inf", "", "broken", True):
+            with self.subTest(value=malformed):
+                self.coordinator.ems_meters = {
+                    "METER_2": {"TOTAL_ACT_POW_FL_1": malformed}
+                }
+                self.coordinator.emit()
+                self.assertIsNone(entity.native_value)
+                self.assertFalse(entity.available)
+                self.assertEqual(len(self.batches), count)
+                self.assertEqual(
+                    entity._attr_unique_id, "abcdef_ems_meter_2_total_act_pow_fl_1"
+                )
+        self.coordinator.ems_meters = {
+            "METER_2": {"TOTAL_ACT_POW_FL_1": "0"}
+        }
+        self.coordinator.emit()
+        self.assertEqual(entity.native_value, 0.0)
+        self.assertTrue(entity.available)
+
+    def test_multiple_meters_have_distinct_ids_and_no_inferred_daily_totals(self):
+        self.coordinator.ems_meters = {
+            "METER_2": {"TOTAL_ACT_POW_FL_1": "0.1"},
+            "METER_3": {"A_PHA_VOLT_FL_1": "231.2"},
+        }
+        self.setup_platform()
+        entities = self.batches[0]
+        self.assertEqual(len(entities), 2)
+        self.assertEqual(len({e._attr_unique_id for e in entities}), 2)
+        self.assertEqual({e.meter_name for e in entities}, {"METER_2", "METER_3"})
+        self.assertFalse(any("_daily_" in e._attr_unique_id for e in entities))
+        self.assertEqual(len(self.registry.calls), 1)
+
+    def test_daily_counter_restores_valid_state_and_ignores_invalid_packet(self):
+        self.coordinator.ems_meters = {
+            "METER_1": {
+                "TOTAL_ACT_POW_FL_1": "0.12",
+                "POS_ACT_POW_FL_1": "319.37",
+                "REW_ACT_POW_FL_1": "100.00",
+            }
+        }
+        self.setup_platform("FriskoGEO")
+        daily = next(e for e in self.batches[0]
+                     if getattr(e, "meter_name", None) == "METER_1"
+                     and getattr(e, "key", None) == "POS_ACT_POW_FL_1"
+                     and "_daily_" in e._attr_unique_id)
+        daily.hass = self.hass
+        daily._restored_state = types.SimpleNamespace(
+            state="1.23",
+            attributes={"ems_day": "2026-11-09", "last_meter_kwh": "319.28"},
+        )
+        import time
+        self.coordinator._meter_last_update["METER_1"] = time.time()
+        asyncio.run(daily.async_added_to_hass())
+        self.assertAlmostEqual(daily.native_value, 1.32)
+        self.assertEqual(daily.extra_state_attributes["last_meter_kwh"], 319.37)
+        self.assertTrue(daily.available)
+
+        # Data continuity: a transient bad kWh reading must not reset the
+        # accumulated daily consumption or inject a synthetic 0.
+        self.coordinator.ems_meters = {
+            "METER_1": {"POS_ACT_POW_FL_1": "NaN"}
+        }
+        daily._refresh_from_meter()
+        self.assertAlmostEqual(daily.native_value, 1.32)
+        self.assertFalse(daily.available)
+
+        self.coordinator.ems_meters = {
+            "METER_1": {"POS_ACT_POW_FL_1": "319.40"}
+        }
+        daily._refresh_from_meter()
+        self.assertAlmostEqual(daily.native_value, 1.35)
+        self.assertTrue(daily.available)
+
+    def test_invalid_restored_state_is_not_accepted_as_daily_total(self):
+        self.coordinator.ems_meters = {
+            "METER_1": {"TOTAL_ACT_POW_FL_1": "0.5", "POS_ACT_POW_FL_1": "broken"}
+        }
+        self.setup_platform("FriskoGEO")
+        daily = next(e for e in self.batches[0]
+                     if getattr(e, "meter_name", None) == "METER_1"
+                     and "_daily_pos_act_pow_fl_1" in e._attr_unique_id)
+        daily.hass = self.hass
+        daily._restored_state = types.SimpleNamespace(
+            state="NaN", attributes={"ems_day": "2026-11-09", "last_meter_kwh": "999"}
+        )
+        asyncio.run(daily.async_added_to_hass())
+        self.assertIsNone(daily.native_value)
+        self.assertIsNone(daily.extra_state_attributes["last_meter_kwh"])
 
     def test_meter_available_by_own_freshness_not_stale_pump(self):
         self.setup_platform()
