@@ -22,7 +22,7 @@ import ssl
 import paho.mqtt.client as mqtt
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import callback
-from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD
+from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD, MQTT_TIMEOUT
 from .ems import extract_ems_meters, parse_ems_numeric
 from .discovery import find_pump
 
@@ -88,6 +88,8 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         self._last_ems_diagnostic = None
         self._last_ems_meter_present = None
         self._last_ems_power_received = None
+        self._reported_stale_pump = False
+        self._reported_stale_meters = frozenset()
 
     # ------------------ Listeners ------------------
     def async_add_listener(self, callback):
@@ -122,78 +124,57 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         for listener in tuple(self._listeners):
             listener()
 
+    @callback
+    def check_stale(self, now=None):
+        """Notify HA once when an already-received MQTT snapshot expires.
+
+        A silent broker sends no message, so the scheduled HA watchdog must
+        explicitly write unavailable states. Do not erase snapshots, create
+        entities, publish commands, or refresh timestamps.
+        """
+        if self._closed:
+            return False
+        current = time.time() if now is None else now
+        stale_pump = (
+            self._last_update is not None
+            and current - self._last_update > MQTT_TIMEOUT
+        )
+        stale_meters = frozenset(
+            name for name, timestamp in self._meter_last_update.items()
+            if current - timestamp > MQTT_TIMEOUT
+        )
+        newly_stale = (
+            (stale_pump and not self._reported_stale_pump)
+            or bool(stale_meters - self._reported_stale_meters)
+        )
+        self._reported_stale_pump = stale_pump
+        self._reported_stale_meters = stale_meters
+        if newly_stale:
+            self._notify_listeners()
+        return newly_stale
+
     # ------------------ Read-only EMS diagnostics ------------------
     def _log_ems_diagnostics(self, devices):
-        """Summarize the complete MQTT Devices list without disclosing secrets.
-
-        Does not alter the current device, subscribe to other topics, or publish.
-        Logs only numeric values with known electrical meter parameter names.
-        """
-        if not isinstance(devices, list):
+        """Low-volume debug counters, without device names or measurements."""
+        if not _LOGGER.isEnabledFor(logging.DEBUG) or not isinstance(devices, list):
             return
-
-        meters = []
-        geo_count = 0
-        other_count = 0
-        for device in devices:
-            if not isinstance(device, dict):
-                other_count += 1
-                continue
-            name = device.get("Name")
-            device_type = device.get("Type")
-            meter_name = (
-                isinstance(name, str)
-                and re.fullmatch(r"METER_[0-9]{1,2}", name, re.IGNORECASE)
-            )
-            meter_type = (
-                isinstance(device_type, str)
-                and device_type.upper() == "METER"
-            )
-            if meter_name or meter_type:
-                # Never print a device identifier other than a validated METER_N.
-                safe_name = name.upper() if meter_name else "METER_UNNAMED"
-                data = device.get("Data")
-                data = data if isinstance(data, dict) else {}
-                values = {}
-                for key in sorted(_EMS_METER_FIELDS & data.keys()):
-                    value = data[key]
-                    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
-                        continue
-                    if isinstance(value, str) and len(value) > 32:
-                        continue
-                    try:
-                        if math.isfinite(float(value)):
-                            values[key] = value  # Raw value, no assumptions about scaling.
-                    except (ValueError, TypeError, OverflowError):
-                        continue
-                meters.append((safe_name, values, len(data)))
-            elif isinstance(name, str) and name.upper().startswith("GEO_"):
-                geo_count += 1
-            else:
-                other_count += 1
-
         now = time.monotonic()
-        has_meter = bool(meters)
-        interval = _EMS_METER_LOG_INTERVAL if has_meter else _EMS_NO_METER_LOG_INTERVAL
         if (
             self._last_ems_diagnostic is not None
-            and self._last_ems_meter_present == has_meter
-            and now - self._last_ems_diagnostic < interval
+            and now - self._last_ems_diagnostic < _EMS_NO_METER_LOG_INTERVAL
         ):
             return
         self._last_ems_diagnostic = now
-        self._last_ems_meter_present = has_meter
-
-        _LOGGER.info(
-            "[EMS_DIAG] MQTT /Dev: Devices=%d, GEO=%d, METER=%d, OTHER=%d",
-            len(devices), geo_count, len(meters), other_count,
+        meter_count = sum(
+            isinstance(item, dict)
+            and isinstance(item.get("Type"), str)
+            and item["Type"].upper() == "METER"
+            for item in devices
         )
-        for safe_name, values, total_keys in meters:
-            _LOGGER.info(
-                "[EMS_DIAG] %s: numeric_fields=%d, all_data_fields=%d, values=%s",
-                safe_name, len(values), total_keys,
-                json.dumps(values, sort_keys=True, ensure_ascii=True, separators=(",", ":")),
-            )
+        _LOGGER.debug(
+            "[EMS_DIAG] device_count=%d meter_count=%d",
+            len(devices), meter_count,
+        )
 
     def _log_ems_power_sample(self, meters, received_at, received_monotonic):
         """Log each valid METER_1 power sample only when DEBUG is enabled.
@@ -310,12 +291,11 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
                     self._meter_last_update = {
                         name: received_at for name in meters
                     }
-                    _LOGGER.debug("Received MQTT pump: %s", pump.get("Name"))
+                    _LOGGER.debug("Received MQTT pump telemetry")
 
-                self._log_ems_power_sample(meters, received_at, received_monotonic)
                 self._notify_listeners()
             except Exception as e:
-                _LOGGER.warning("Invalid JSON on %s: %s", self.topic, e)
+                _LOGGER.warning("Ignoring malformed MQTT telemetry (%s)", type(e).__name__)
 
         client = mqtt.Client()
         client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
@@ -364,7 +344,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         })
 
         topic = self.topic.replace("/Dev", "") + "/App"
-        _LOGGER.debug("Publishing to %s: %s", topic, payload)
+        _LOGGER.debug("Publishing Euros OS device command")
         self.client.publish(topic, payload, retain=False)
         return True
 
