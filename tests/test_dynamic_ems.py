@@ -94,8 +94,8 @@ class DynamicEmsPlatformTests(unittest.TestCase):
             "homeassistant": mod("homeassistant"),
             "homeassistant.components": mod("homeassistant.components"),
             "homeassistant.components.sensor": mod("homeassistant.components.sensor",
-                SensorEntity=type("SensorEntity", (), {}),
-                RestoreSensor=type("RestoreSensor", (), {})),
+                SensorEntity=type("SensorEntity", (), {"hass": None}),
+                RestoreSensor=type("RestoreSensor", (), {"hass": None})),
             "homeassistant.helpers": mod("homeassistant.helpers"),
             "homeassistant.helpers.device_registry": mod(
                 "homeassistant.helpers.device_registry", async_get=lambda hass: cls.registry),
