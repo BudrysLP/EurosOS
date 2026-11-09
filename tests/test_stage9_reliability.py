@@ -50,7 +50,7 @@ class Stage9ReliabilityTests(unittest.TestCase):
     def test_diagnostic_samples_are_not_logged_at_info_level(self):
         coordinator = read("coordinator.py")
         start = coordinator.index("    def _log_ems_diagnostics(")
-        end = coordinator.index("    def _log_ems_power_sample(", start)
+        end = coordinator.index("    # ------------------ MQTT ------------------", start)
         diagnostic = coordinator[start:end]
         self.assertIn("logging.DEBUG", diagnostic)
         self.assertNotIn("_LOGGER.info(", diagnostic)
