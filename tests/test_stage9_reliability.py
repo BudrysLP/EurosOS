@@ -47,6 +47,16 @@ class Stage9ReliabilityTests(unittest.TestCase):
         self.assertNotIn('"Checking MQTT topic availability: %s on %s"', flow)
         self.assertNotIn('"Invalid JSON on %s: %s"', coordinator)
 
+    def test_all_pump_controls_expose_freshness_as_availability(self):
+        for name in ("number.py", "select.py", "switch.py", "binary_sensor.py"):
+            with self.subTest(name=name):
+                source = read(name)
+                self.assertIn("def available(self):", source)
+                self.assertIn("self.coordinator.pump_is_fresh()", source)
+        coordinator = read("coordinator.py")
+        self.assertIn("def pump_is_fresh(self, now=None):", coordinator)
+        self.assertIn("if not self.pump_is_fresh():", coordinator)
+
     def test_diagnostic_samples_are_not_logged_at_info_level(self):
         coordinator = read("coordinator.py")
         start = coordinator.index("    def _log_ems_diagnostics(")
