@@ -67,6 +67,10 @@ class EurosOSModeSelect(SelectEntity):
         return self._unit
 
     @property
+    def available(self):
+        return self.coordinator.pump_is_fresh()
+
+    @property
     def current_option(self):
         if not self.coordinator.device or "Data" not in self.coordinator.device:
             return None
