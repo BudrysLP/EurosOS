@@ -77,6 +77,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         self.pump_name = pump_name
         self.pump_type = pump_type
         self._event_loop = event_loop
+        self._closed = False
         self.device = {}
         self.ems_meters = {}  # Current read-only METER_N data, separate from GEO.
         self._meter_last_update = {}  # Independent receive time for each meter.
@@ -101,13 +102,18 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
     def _notify_listeners(self):
         # MQTT callbacks run in a worker thread; HA entity callbacks must run
         # on the Home Assistant event loop, not directly in that worker.
+        if self._closed:
+            return
         if self._event_loop is not None:
-            self._event_loop.call_soon_threadsafe(self._dispatch_listeners)
+            if not self._event_loop.is_closed():
+                self._event_loop.call_soon_threadsafe(self._dispatch_listeners)
         else:
             self._dispatch_listeners()
 
     @callback
     def _dispatch_listeners(self):
+        if self._closed:
+            return
         for listener in tuple(self._listeners):
             listener()
 
@@ -211,7 +217,24 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         )
 
     # ------------------ MQTT ------------------
+    def disconnect(self):
+        """Stop the MQTT worker when the HA config entry is unloaded.
+
+        Do not delete device snapshots or HA entity registry entries.
+        """
+        self._closed = True
+        client = self.client
+        self.client = None
+        self.connected.clear()
+        if client is None:
+            return
+        try:
+            client.disconnect()
+        finally:
+            client.loop_stop()
+
     def connect(self):
+        self._closed = False
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
                 _LOGGER.debug("Connected to MQTT broker at %s", self.ip)
@@ -221,6 +244,8 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
                 _LOGGER.error("Failed to connect to MQTT broker, rc=%s", rc)
 
         def on_message(client, userdata, msg):
+            if self._closed:
+                return
             try:
                 payload = json.loads(msg.payload)
                 if not isinstance(payload, dict):
