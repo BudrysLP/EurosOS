@@ -417,6 +417,7 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.assertEqual(failed_client.loop_stop_calls, 1)
 
     def test_mqtt_publish_acknowledgement_and_connection_status(self):
+        self.client.emit([self.geo()])
         entry = {"device_model": "GEO_1", "device_type": "FriskoGEO", "device_version": "1"}
         self.client.publish_rc = 0
         self.assertTrue(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, entry)))
@@ -428,10 +429,27 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.assertEqual(len(self.client.published), 2)
 
     def test_publish_exception_and_missing_identity_fail_closed(self):
+        self.client.emit([self.geo()])
         entry = {"device_model": "GEO_1", "device_type": "FriskoGEO", "device_version": "1"}
         self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, {})))
         with patch.object(self.client, "publish", side_effect=OSError("offline")):
             self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, entry)))
+
+    def test_commands_reject_stale_pump_even_with_live_mqtt_socket(self):
+        self.client.emit([self.geo(), self.meter()])
+        received = self.coordinator._last_update
+        self.assertTrue(self.coordinator.pump_is_fresh(now=received + 59))
+        self.assertFalse(self.coordinator.pump_is_fresh(now=received + 61))
+        self.coordinator._last_update = received - 61
+        entry = {"device_model": "GEO_1", "device_type": "FriskoGEO", "device_version": "1"}
+        self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 50}, entry)))
+        self.assertEqual(self.client.published, [])
+        self.client.emit([self.meter("0.3")])
+        self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 50}, entry)))
+        self.assertEqual(self.client.published, [])
+        self.client.emit([self.geo()])
+        self.assertTrue(asyncio.run(self.coordinator.async_set_device_value({"SX5": 50}, entry)))
+        self.assertEqual(len(self.client.published), 1)
 
 
 if __name__ == "__main__":
