@@ -17,7 +17,7 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.core import callback
 from .const import DOMAIN, CONF_KEY, NUMBERS_VARIABLES
 from .coordinator import EurosOSMQTTCoordinator
-from .geo import entity_supported_for_device
+from .geo import GEO_DEVICE_TYPE, entity_supported_for_device
 from homeassistant.exceptions import HomeAssistantError
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
@@ -65,7 +65,7 @@ class EurosOSNumber(NumberEntity):
 
     async def async_set_native_value(self, value):
         mode = self._get_device_mode()
-        if self.key in ("SPDHW_ZAD", "SPHT_ZAD") and mode != "AUTO":
+        if self.key in ("SPDHW_ZAD", "SPHT_ZAD") and mode not in ("AUTO", "EMS"):
             raise HomeAssistantError(
                 "Nie można ustawić temperatury: warunki urządzenia nie są spełnione."
             )
@@ -101,6 +101,17 @@ class EurosOSNumber(NumberEntity):
             SXF_TIME = int(device_data.get("SXF_TIME", 0))
 
             if SBF_OOF == 1 and SXF_ECO == 0 and SXF_AWA == 0 and SXF_TIME == 0:
+                if getattr(self.coordinator, "pump_type", None) == GEO_DEVICE_TYPE:
+                    # GEO in EMS previously looked like AUTO to NumberEntity.
+                    # Keep verified temperature adjustments allowed in EMS,
+                    # but reject missing/invalid mode flags instead of guessing.
+                    tariff = device_data.get("U_ENE_TAR")
+                    if isinstance(tariff, bool):
+                        return "UNKNOWN"
+                    if str(tariff).strip() == "1":
+                        return "EMS"
+                    if str(tariff).strip() != "0":
+                        return "UNKNOWN"
                 return "AUTO"
             elif SBF_OOF == 1 and SXF_ECO == 1 and SXF_AWA == 0:
                 return "ECO"
