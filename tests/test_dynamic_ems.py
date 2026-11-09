@@ -205,6 +205,55 @@ class DynamicEmsPlatformTests(unittest.TestCase):
         self.coordinator.emit()
         self.assertEqual(len(self.batches), count)
 
+    def test_reloading_platform_reuses_legacy_unique_ids(self):
+        # A new coordinator and fresh entities use the same unique IDs, so
+        # HA's entity registry can reuse historic METER_1 entities/history.
+        self.coordinator.ems_meters = {
+            "METER_1": {"TOTAL_ACT_POW_FL_1": "0.100"}
+        }
+        self.setup_platform("FriskoGEO")
+        first = {
+            entity._attr_unique_id
+            for entity in self.batches[0]
+            if getattr(entity, "meter_name", None) == "METER_1"
+        }
+        self.assertEqual(len(first), 35)
+        self.coordinator = FakeCoordinator()
+        self.coordinator.ems_meters = {
+            "METER_1": {"TOTAL_ACT_POW_FL_1": "0.200"}
+        }
+        self.state["coordinator"] = self.coordinator
+        self.setup_platform("FriskoGEO")
+        second = {
+            entity._attr_unique_id
+            for entity in self.batches[-1]
+            if getattr(entity, "meter_name", None) == "METER_1"
+        }
+        self.assertEqual(first, second)
+        self.assertIn("abcdef_ems_meter_1_daily_rew_act_pow_fl_1", second)
+
+    def test_reloading_platform_reuses_additional_meter_unique_ids(self):
+        self.coordinator.ems_meters = {
+            "METER_2": {"TOTAL_ACT_POW_FL_1": "0.100"}
+        }
+        self.setup_platform()
+        first = [
+            entity._attr_unique_id for entity in self.batches[0]
+            if getattr(entity, "meter_name", None) == "METER_2"
+        ]
+        self.coordinator = FakeCoordinator()
+        self.coordinator.ems_meters = {
+            "METER_2": {"TOTAL_ACT_POW_FL_1": "0.200"}
+        }
+        self.state["coordinator"] = self.coordinator
+        self.setup_platform()
+        second = [
+            entity._attr_unique_id for entity in self.batches[-1]
+            if getattr(entity, "meter_name", None) == "METER_2"
+        ]
+        self.assertEqual(first, second)
+        self.assertEqual(first, ["abcdef_ems_meter_2_total_act_pow_fl_1"])
+
     def test_meter_available_by_own_freshness_not_stale_pump(self):
         self.setup_platform()
         self.coordinator.ems_meters = {"METER_2": {"TOTAL_ACT_POW_FL_1": "1"}}
