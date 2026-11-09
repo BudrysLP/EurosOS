@@ -67,6 +67,10 @@ class EurosOSBinarySensor(BinarySensorEntity):
 
         coordinator.async_add_listener(self._handle_coordinator_update)
 
+    @property
+    def available(self):
+        return self.coordinator.pump_is_fresh()
+
     @callback
     def _handle_coordinator_update(self):
         device_data = getattr(self.coordinator.device, "get", lambda x, d=None: d)("Data", {})
