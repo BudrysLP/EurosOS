@@ -147,7 +147,33 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.client.emit([self.meter("2.0")])
         self.assertEqual(self.coordinator._last_update, previous)
         self.assertEqual(self.coordinator.device["Name"], "GEO_1")
-        self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "0.168")
+        self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "2.0")
+        self.assertIn("METER_1", self.coordinator._meter_last_update)
+
+    def test_meter_only_packet_can_discover_new_meter(self):
+        self.client.emit([self.geo(), self.meter()])
+        previous = self.coordinator._last_update
+        meter2 = {"Name": "METER_2", "Type": "METER", "Data": {"TOTAL_ACT_POW_FL_1": "0.03"}}
+        self.client.emit([meter2])
+        self.assertEqual(self.coordinator.device["Name"], "GEO_1")
+        self.assertEqual(self.coordinator._last_update, previous)
+        self.assertEqual(set(self.coordinator.ems_meters), {"METER_1", "METER_2"})
+        self.assertIn("METER_2", self.coordinator._meter_last_update)
+
+    def test_foreign_pump_cannot_inject_meter(self):
+        self.client.emit([self.geo(), self.meter()])
+        foreign = {"Name": "ALLINONE_1", "Type": "FriskoALLINONE", "Data": {}}
+        injected = {"Name": "METER_3", "Type": "METER", "Data": {"TOTAL_ACT_POW_FL_1": "9"}}
+        self.client.emit([foreign, injected])
+        self.assertNotIn("METER_3", self.coordinator.ems_meters)
+        self.assertEqual(self.coordinator.device["Name"], "GEO_1")
+
+    def test_pump_snapshot_without_meter_clears_active_readings_not_entity_registry(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.assertIn("METER_1", self.coordinator.ems_meters)
+        self.client.emit([self.geo()])
+        self.assertEqual(self.coordinator.ems_meters, {})
+        self.assertEqual(self.coordinator._meter_last_update, {})
 
     def test_unknown_or_other_pump_does_not_switch(self):
         self.client.emit([self.geo()])
