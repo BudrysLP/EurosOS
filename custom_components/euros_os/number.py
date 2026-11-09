@@ -63,6 +63,10 @@ class EurosOSNumber(NumberEntity):
 
         coordinator.async_add_listener(self._handle_coordinator_update)
 
+    @property
+    def available(self):
+        return self.coordinator.pump_is_fresh()
+
     async def async_set_native_value(self, value):
         mode = self._get_device_mode()
         if self.key in ("SPDHW_ZAD", "SPHT_ZAD") and mode not in ("AUTO", "EMS"):
