@@ -32,6 +32,10 @@ from .ems import (
     EMS_DOM_STAGE_2_DIAGNOSTIC_KEYS,
     accumulate_ems_daily_energy,
     parse_ems_numeric,
+    discover_ems_sensor_keys,
+    discover_ems_daily_keys,
+    ems_meter_device_name,
+    ems_meter_sensor_info,
 )
 from .geo import (
     GEO_DEVICE_TYPE,
@@ -79,38 +83,75 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 )
             )
 
-    if device_type == GEO_DEVICE_TYPE:
-        # Register or find the parent pump before adding the logical EMS meter.
-        # HA's via_device_id expects the device registry ID, not an identifier tuple.
-        parent_device = dr.async_get(hass).async_get_or_create(
-            config_entry_id=entry.entry_id,
-            **device_info,
-        )
-        # A separate logical device: METER_1 measures the entire grid connection,
-        # not the electricity consumption of the heat pump alone.
-        meter_device_info = {
-            "identifiers": {(DOMAIN, f"{unique_prefix}_ems_meter_1")},
-            "name": EMS_DOM_DEVICE_NAME,
-            "model": EMS_DOM_METER_NAME,
-            "via_device_id": parent_device.id,
-        }
-        for key, info in EMS_DOM_SENSOR_DEFINITIONS.items():
-            entities.append(
-                EurosOSEMSMeterSensor(
-                    coordinator, EMS_DOM_METER_NAME, key, info,
-                    unique_prefix, meter_device_info,
-                )
-            )
-        for key, info in EMS_DOM_DAILY_SENSOR_DEFINITIONS.items():
-            entities.append(
-                EurosOSEMSDailyEnergySensor(
-                    coordinator, EMS_DOM_METER_NAME, key, info,
-                    unique_prefix, meter_device_info,
-                )
-            )
+    # Meter discovery is independent of the pump model (GEO/ATMO/ALLINONE).
+    # Only real METER_N messages create EMS entities; no phantom EMS devices.
+    # These keys are stable across MQTT restarts, ordering, and missing packets.
+    registered_ems_entities = set()
+    parent_device = None
 
+    @callback
+    def _discover_new_meter_entities():
+        nonlocal parent_device
+        pending = []
+        for meter_name, readings in sorted(coordinator.ems_meters.items()):
+            sensor_keys = discover_ems_sensor_keys(meter_name, readings)
+            daily_keys = discover_ems_daily_keys(meter_name, readings)
+            unseen_sensors = [
+                key for key in sensor_keys
+                if ("sensor", meter_name, key) not in registered_ems_entities
+            ]
+            unseen_daily = [
+                key for key in daily_keys
+                if ("daily", meter_name, key) not in registered_ems_entities
+            ]
+            if not unseen_sensors and not unseen_daily:
+                continue
+
+            # Register the existing parent device once, and link each meter
+            # by via_device_id without affecting the pump's registry identity.
+            if parent_device is None:
+                parent_device = dr.async_get(hass).async_get_or_create(
+                    config_entry_id=entry.entry_id,
+                    **device_info,
+                )
+            meter_device_info = {
+                "identifiers": {(DOMAIN, f"{unique_prefix}_ems_{meter_name.lower()}")},
+                "name": ems_meter_device_name(meter_name),
+                "model": meter_name,
+                "via_device_id": parent_device.id,
+            }
+            for key in unseen_sensors:
+                pending.append(
+                    EurosOSEMSMeterSensor(
+                        coordinator, meter_name, key,
+                        ems_meter_sensor_info(meter_name, key),
+                        unique_prefix, meter_device_info,
+                    )
+                )
+                registered_ems_entities.add(("sensor", meter_name, key))
+            for key in unseen_daily:
+                pending.append(
+                    EurosOSEMSDailyEnergySensor(
+                        coordinator, meter_name, key,
+                        EMS_DOM_DAILY_SENSOR_DEFINITIONS[key],
+                        unique_prefix, meter_device_info,
+                    )
+                )
+                registered_ems_entities.add(("daily", meter_name, key))
+        return pending
+
+    entities.extend(_discover_new_meter_entities())
     async_add_entities(entities)
-    _LOGGER.info("Added %d sensors entities.", len(entities))
+
+    @callback
+    def _on_meter_discovery():
+        new_entities = _discover_new_meter_entities()
+        if new_entities:
+            async_add_entities(new_entities)
+
+    coordinator.async_add_listener(_on_meter_discovery)
+    hass.data[DOMAIN][entry.entry_id]["meter_discovery_listener"] = _on_meter_discovery
+    _LOGGER.info("Added %d initial sensor entities.", len(entities))
 
 
 class EurosOSSensor(SensorEntity):
@@ -289,7 +330,12 @@ class EurosOSEMSMeterSensor(SensorEntity):
         self._attr_icon = icon
         self._attr_device_class = device_class
         self._attr_state_class = state_class
-        if key in EMS_DOM_STAGE_1_DESCRIPTIONS:
+        if meter_name != EMS_DOM_METER_NAME:
+            self._attr_extra_state_attributes = {
+                "licznik": meter_name,
+                "parametr_mqtt": key,
+            }
+        elif key in EMS_DOM_STAGE_1_DESCRIPTIONS:
             self._attr_extra_state_attributes = {
                 "opis": EMS_DOM_STAGE_1_DESCRIPTIONS[key],
                 "licznik": EMS_DOM_METER_NAME,
@@ -316,7 +362,7 @@ class EurosOSEMSMeterSensor(SensorEntity):
 
     @property
     def available(self):
-        last_update = getattr(self.coordinator, "_last_update", None)
+        last_update = self.coordinator._meter_last_update.get(self.meter_name)
         return (
             last_update is not None
             and time.time() - last_update <= MQTT_TIMEOUT
@@ -374,7 +420,7 @@ class EurosOSEMSDailyEnergySensor(RestoreSensor):
 
     @property
     def available(self):
-        last_update = getattr(self.coordinator, "_last_update", None)
+        last_update = self.coordinator._meter_last_update.get(self.meter_name)
         readings = self.coordinator.ems_meters.get(self.meter_name)
         return (
             last_update is not None
