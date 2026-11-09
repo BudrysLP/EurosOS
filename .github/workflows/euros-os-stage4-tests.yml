@@ -8,6 +8,7 @@ on:
       - feature/dynamic-ems-discovery
       - feature/compatibility-safety
       - feature/integration-failure-scenarios
+      - feature/stage8-ha-preflight
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Verify MQTT dependency installs
+        run: |
+          python -m pip install --disable-pip-version-check 'paho-mqtt>=1.6,<3'
+          python -c "import paho.mqtt.client as mqtt; client = mqtt.Client(); assert callable(client.connect)"
 
       - name: Check Python syntax
         run: python -m compileall -q custom_components/euros_os tests
