@@ -49,6 +49,10 @@ class EurosOSSwitch(SwitchEntity):
         coordinator.async_add_listener(self._handle_coordinator_update)
 
     @property
+    def available(self):
+        return self.coordinator.pump_is_fresh()
+
+    @property
     def is_on(self):
         return self._is_on
 
