@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 NASTĘPNY.
+Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8); TLS i końcowa regresja nadal otwarte.
 
 ## Zasady
 
@@ -15,14 +15,15 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - Ostatni przetestowany kod: `feature/stage8-ha-preflight` @ `12d2502091d2364e7cb1803eef3bd523a31618de`.
 - Gałąź dokumentacji ETAPU 9: `feature/stage9-audit`.
 - Audyt i rejestr usterek: [ETAP_9_1_AUDYT_TECHNICZNY.md](ETAP_9_1_AUDYT_TECHNICZNY.md).
+- Raport zmian i otwartego ryzyka TLS: [ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md).
 - Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
 - PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
 
 ## Postęp
 
-- Ukończono: **8/69** zadań (11.6%).
+- Ukończono: **14/69** zadań (20.3%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Następny podetap: **9.2 (0/8)** — bezpieczeństwo i niezawodność.
+- Aktywny podetap: **9.2 (6/8)** — ukończone poprawki MQTT, dostępności, logowania i sterowania; otwarty TLS (P1) i końcowe testy.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -35,15 +36,15 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.1.7** Sprawdzić config_flow.py, const.py, manifest.json i tłumaczenia.
 - [x] **9.1.8** Przygotować rejestr usterek z priorytetami P0/P1/P2 i planem poprawek.
 
-## 9.2 — Niezawodność i bezpieczeństwo (0/8)
+## 9.2 — Niezawodność i bezpieczeństwo (6/8)
 
-- [ ] **9.2.1** Zweryfikować zachowanie HA po przekroczeniu MQTT_TIMEOUT bez nowych wiadomości.
-- [ ] **9.2.2** Zweryfikować reconnect, wielokrotne reload/unload i brak pozostawionych wątków MQTT.
-- [ ] **9.2.3** Sprawdzić współbieżny dostęp do danych i bezpieczne przekazywanie aktualizacji do pętli HA.
-- [ ] **9.2.4** Zweryfikować obsługę błędnych JSON, NaN, braków pomiarów i duplikatów urządzeń.
+- [x] **9.2.1** Zweryfikować zachowanie HA po przekroczeniu MQTT_TIMEOUT bez nowych wiadomości.
+- [x] **9.2.2** Zweryfikować reconnect, wielokrotne reload/unload i brak pozostawionych wątków MQTT.
+- [x] **9.2.3** Sprawdzić współbieżny dostęp do danych i bezpieczne przekazywanie aktualizacji do pętli HA.
+- [x] **9.2.4** Zweryfikować obsługę błędnych JSON, NaN, braków pomiarów i duplikatów urządzeń.
 - [ ] **9.2.5** Zbadać TLS, weryfikację certyfikatu oraz sposób obsługi danych uwierzytelniających.
-- [ ] **9.2.6** Sprawdzić, czy logi nie ujawniają kluczy, haseł ani poufnych payloadów.
-- [ ] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
+- [x] **9.2.6** Sprawdzić, czy logi nie ujawniają kluczy, haseł ani poufnych payloadów.
+- [x] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
 - [ ] **9.2.8** Każdą potrzebną poprawkę opatrzyć testem regresyjnym.
 
 ## 9.3 — Kompatybilność urządzeń i Home Assistant (0/9)
@@ -125,7 +126,8 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | Data | Zakres | Wynik | Dowód |
 | --- | --- | --- | --- |
 | 2026-11-09 | 9.1.1–9.1.8 | Ukończony audyt statyczny, 15 ustaleń (P1/P2), bez zmian w kodzie produkcyjnym | [Raport](ETAP_9_1_AUDYT_TECHNICZNY.md) |
+| 2026-11-09 | 9.2.1–9.2.4, 9.2.6–9.2.7 | Zielone testy symulacyjne; 9.2.5 TLS i 9.2.8 końcowa regresja nadal otwarte | [Raport](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md), [CI 120/120 na każdą wersję](https://github.com/BudrysLP/EurosOS/actions/runs/42715633143) |
 
 ## Kolejny ruch
 
-Rozpocząć 9.2.1 i 9.2.7 od przygotowania reprodukowalnych testów bezpieczeństwa: stary stan po MQTT_TIMEOUT i spójna interpretacja EMS/AUTO. Wszystkie poprawki najpierw na gałęzi projektowej i w CI. Zmiany sterowania tylko po uzgodnieniu bezpieczeństwa.
+Dokończyć 9.2.5 (bezpieczna weryfikacja certyfikatu brokera TLS i dostępnych wariantów), następnie 9.2.8 (ostateczne testy po każdej zmianie). P1 TLS nadal blokuje końcowy PR; weryfikacja sprzętowa i HA w ETAPIE 9.5.
