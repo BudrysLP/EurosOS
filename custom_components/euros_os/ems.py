@@ -158,12 +158,15 @@ def discover_ems_sensor_keys(meter_name, readings):
     """
     if not isinstance(readings, dict):
         return ()
-    if meter_name == EMS_DOM_METER_NAME:
-        return tuple(EMS_DOM_SENSOR_DEFINITIONS)
-    return tuple(
+    valid_keys = tuple(
         key for key in EMS_DOM_SENSOR_DEFINITIONS
         if key in readings and parse_ems_numeric(readings[key]) is not None
     )
+    # Wait for at least one real measurement before creating the historic
+    # fixed METER_1 entity set; an empty Data dict is not a measurement.
+    if meter_name == EMS_DOM_METER_NAME and valid_keys:
+        return tuple(EMS_DOM_SENSOR_DEFINITIONS)
+    return valid_keys
 
 
 def discover_ems_daily_keys(meter_name, readings):
@@ -171,7 +174,7 @@ def discover_ems_daily_keys(meter_name, readings):
 
     Other meter roles are not known, so do not infer household import/export.
     """
-    if meter_name == EMS_DOM_METER_NAME and isinstance(readings, dict):
+    if meter_name == EMS_DOM_METER_NAME and discover_ems_sensor_keys(meter_name, readings):
         return tuple(EMS_DOM_DAILY_SENSOR_DEFINITIONS)
     return ()
 
