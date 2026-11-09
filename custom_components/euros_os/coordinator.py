@@ -217,13 +217,13 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
                     self._log_ems_diagnostics(devices)
                     received_at = time.time()
                     received_monotonic = time.monotonic()
-                    meters = extract_ems_meters(devices)
-                    self._log_ems_power_sample(meters, received_at, received_monotonic)
-                    self.ems_meters = meters
                     pump = find_pump(devices, expected_name=self.pump_name, expected_type=self.pump_type)
                     if pump is None:
                         _LOGGER.warning("No unambiguous configured pump in MQTT Devices; retaining last pump state")
                         return
+                    meters = extract_ems_meters(devices)
+                    self._log_ems_power_sample(meters, received_at, received_monotonic)
+                    self.ems_meters = meters
                     self.device = pump
                     self._last_update = received_at
                     _LOGGER.debug("Received MQTT payload: %s", self.device)
