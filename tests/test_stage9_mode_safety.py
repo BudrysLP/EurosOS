@@ -44,6 +44,10 @@ class ModeSafetyTests(unittest.TestCase):
                 "homeassistant.components.select",
                 SelectEntity=type("SelectEntity", (), {"hass": None}),
             ),
+            "homeassistant.components.switch": module(
+                "homeassistant.components.switch",
+                SwitchEntity=type("SwitchEntity", (), {"hass": None}),
+            ),
             "homeassistant.exceptions": module("homeassistant.exceptions", HomeAssistantError=HaError),
             "homeassistant.core": module("homeassistant.core", callback=lambda fn: fn),
             "custom_components": module("custom_components"),
@@ -51,7 +55,7 @@ class ModeSafetyTests(unittest.TestCase):
             "custom_components.euros_os.const": module(
                 "custom_components.euros_os.const",
                 DOMAIN="euros_os", CONF_KEY="key",
-                NUMBERS_VARIABLES={}, SELECTS_VARIABLES={},
+                NUMBERS_VARIABLES={}, SELECTS_VARIABLES={}, SWITCH_VARIABLES={},
             ),
             "custom_components.euros_os.coordinator": module(
                 "custom_components.euros_os.coordinator", EurosOSMQTTCoordinator=object,
@@ -65,6 +69,7 @@ class ModeSafetyTests(unittest.TestCase):
         cls.patches.start()
         cls.number_module = load("custom_components.euros_os.number", "number.py")
         cls.select_module = load("custom_components.euros_os.select", "select.py")
+        cls.switch_module = load("custom_components.euros_os.switch", "switch.py")
 
     @classmethod
     def tearDownClass(cls):
@@ -84,6 +89,7 @@ class ModeSafetyTests(unittest.TestCase):
             entry_data={"device_model": "GEO_1"},
             async_add_listener=lambda fn: None,
             async_set_device_value=send,
+            pump_is_fresh=lambda: True,
         )
         self.temp = self.number_module.EurosOSNumber(
             self.coordinator, "SPDHW_ZAD",
@@ -94,6 +100,9 @@ class ModeSafetyTests(unittest.TestCase):
             self.coordinator, "MODE",
             ("Mode", None, "mdi:autorenew", ["AUTO", "ECO", "TIME", "AWAY", "OFF"]),
             "site", {}, device_type="FriskoGEO",
+        )
+        self.switch = self.switch_module.EurosOSSwitch(
+            self.coordinator, "SWEXT_T_CWU", ("CWU Turbo", "mdi:fire"), "site", {},
         )
 
     def test_geo_ems_is_not_misidentified_as_auto(self):
@@ -138,6 +147,24 @@ class ModeSafetyTests(unittest.TestCase):
         self.coordinator.pump_type = "FriskoATMO"
         self.coordinator.device["Data"].pop("U_ENE_TAR")
         self.assertEqual(self.temp._get_device_mode(), "AUTO")
+
+    def test_switch_missing_and_malformed_values_remain_unknown(self):
+        self.switch._handle_coordinator_update()
+        self.assertIsNone(self.switch.is_on)
+        for raw, expected in (("0", False), ("1", True), ("bad", None), (None, None)):
+            with self.subTest(raw=raw):
+                self.coordinator.device["Data"]["SWEXT_T_CWU"] = raw
+                self.switch._handle_coordinator_update()
+                self.assertIs(self.switch.is_on, expected)
+
+    def test_cwu_turbo_malformed_controller_flags_do_not_publish(self):
+        self.coordinator.device["Data"].update({
+            "SBF_DHS": "bad", "SBF_DHX": 1,
+            "SBF_OOF": 1, "SXF_ANL": 0, "SBF_PHT": 0,
+        })
+        with self.assertRaises(HaError):
+            asyncio.run(self.switch.async_turn_on())
+        self.assertEqual(self.sent, [])
 
 
 if __name__ == "__main__":
