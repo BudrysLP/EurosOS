@@ -70,12 +70,13 @@ _EMS_NO_METER_LOG_INTERVAL = 300.0  # seconds
 
 class EurosOSMQTTCoordinator(DataUpdateCoordinator):
 
-    def __init__(self, ip, topic, pump_name=None, pump_type=None):
+    def __init__(self, ip, topic, pump_name=None, pump_type=None, event_loop=None):
         super().__init__(None, _LOGGER, name="EurosOS")
         self.ip = ip
         self.topic = topic
         self.pump_name = pump_name
         self.pump_type = pump_type
+        self._event_loop = event_loop
         self.device = {}
         self.ems_meters = {}  # Current read-only METER_N data, separate from GEO.
         self.client = None
@@ -97,8 +98,17 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
 
     @callback
     def _notify_listeners(self):
-        for callback in self._listeners:
-            callback()
+        # MQTT callbacks run in a worker thread; HA entity callbacks must run
+        # on the Home Assistant event loop, not directly in that worker.
+        if self._event_loop is not None:
+            self._event_loop.call_soon_threadsafe(self._dispatch_listeners)
+        else:
+            self._dispatch_listeners()
+
+    @callback
+    def _dispatch_listeners(self):
+        for listener in tuple(self._listeners):
+            listener()
 
     # ------------------ Read-only EMS diagnostics ------------------
     def _log_ems_diagnostics(self, devices):
