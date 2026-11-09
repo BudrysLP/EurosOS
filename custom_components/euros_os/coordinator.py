@@ -230,8 +230,14 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
             return
         try:
             client.disconnect()
+        except Exception as exc:
+            # A broker/socket failure must not block unloading the HA entry.
+            _LOGGER.warning("MQTT disconnect failed: %s", exc)
         finally:
-            client.loop_stop()
+            try:
+                client.loop_stop()
+            except Exception as exc:
+                _LOGGER.warning("MQTT worker shutdown failed: %s", exc)
 
     def connect(self):
         self._closed = False
