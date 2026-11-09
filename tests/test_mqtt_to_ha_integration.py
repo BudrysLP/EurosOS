@@ -169,7 +169,8 @@ class RealCoordinatorToHaPlatformTests(unittest.TestCase):
 
     def test_full_geo_packet_routes_to_both_pump_and_legacy_ems(self):
         self.setup_integration()
-        self.assertEqual(self.sensor("site_tsm16").state, "unavailable")
+        self.assertFalse(self.sensor("site_tsm16").available)
+        self.assertIsNone(self.sensor("site_tsm16").state)
         self.client.emit([self.meter(), self.pump()])
         self.loop.flush()
         self.assertEqual(self.sensor("site_tsm16").state, 24.2)
