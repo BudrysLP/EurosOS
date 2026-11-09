@@ -109,7 +109,7 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
             "custom_components.euros_os": module("custom_components.euros_os"),
             "custom_components.euros_os.const": module(
                 "custom_components.euros_os.const",
-                MQTT_PORT=8883, MQTT_USER="test", MQTT_PASSWORD="test",
+                MQTT_PORT=8883, MQTT_USER="test", MQTT_PASSWORD="test", MQTT_TIMEOUT=60,
             ),
         })
         cls.patch_modules.start()
@@ -342,6 +342,50 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         # is controlled by the existing MQTT_TIMEOUT mechanism.
         self.assertEqual((self.coordinator.device, self.coordinator.ems_meters), before)
         self.assertEqual(self.client.published, [])
+
+    def test_stale_watchdog_notifies_once_and_preserves_snapshots(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.loop.flush()
+        received = self.coordinator._last_update
+        self.assertFalse(self.coordinator.check_stale(now=received + 59))
+        self.assertEqual(self.loop.pending, [])
+        self.assertTrue(self.coordinator.check_stale(now=received + 61))
+        self.assertEqual(self.events, ["updated"])  # scheduled, not inline
+        self.loop.flush()
+        self.assertEqual(self.events, ["updated", "updated"])
+        self.assertFalse(self.coordinator.check_stale(now=received + 62))
+        self.assertEqual(self.coordinator.device["Name"], "GEO_1")
+        self.assertIn("METER_1", self.coordinator.ems_meters)
+        self.assertEqual(self.client.published, [])
+
+    def test_stale_watchdog_recovers_then_expires_again(self):
+        self.client.emit([self.geo(), self.meter()])
+        received = self.coordinator._last_update
+        self.assertTrue(self.coordinator.check_stale(now=received + 61))
+        self.loop.flush()
+        self.client.emit([self.geo(), self.meter("0.25")])
+        refreshed = self.coordinator._last_update
+        self.assertFalse(self.coordinator.check_stale(now=refreshed + 1))
+        self.assertTrue(self.coordinator.check_stale(now=refreshed + 61))
+        self.assertEqual(self.client.published, [])
+
+    def test_meter_only_recovery_does_not_refresh_stale_pump(self):
+        self.client.emit([self.geo(), self.meter()])
+        received = self.coordinator._last_update
+        self.assertTrue(self.coordinator.check_stale(now=received + 61))
+        self.client.emit([self.meter("0.33")])
+        self.assertEqual(self.coordinator._last_update, received)
+        self.assertFalse(self.coordinator.check_stale(now=received + 61))
+        self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "0.33")
+        self.assertEqual(self.client.published, [])
+
+    def test_watchdog_is_noop_after_unload(self):
+        self.client.emit([self.geo(), self.meter()])
+        received = self.coordinator._last_update
+        self.loop.flush()
+        self.coordinator.disconnect()
+        self.assertFalse(self.coordinator.check_stale(now=received + 61))
+        self.assertEqual(self.loop.pending, [])
 
 
 if __name__ == "__main__":
