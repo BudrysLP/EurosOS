@@ -3,6 +3,7 @@
 Run: python -m unittest discover -s tests -p 'test_coordinator_discovery.py'
 No broker, Home Assistant installation, or real device is required.
 """
+import asyncio
 import importlib.util
 import json
 from pathlib import Path
@@ -42,6 +43,7 @@ class FakeClient:
 
     def __init__(self):
         self.published = []
+        self.publish_rc = 0
         self.subscribed = []
         self.disconnect_calls = 0
         self.loop_stop_calls = 0
@@ -79,6 +81,7 @@ class FakeClient:
 
     def publish(self, *args, **kwargs):
         self.published.append((args, kwargs))
+        return types.SimpleNamespace(rc=self.publish_rc)
 
 
 def load(name, filename):
@@ -104,7 +107,7 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
             "homeassistant.core": module("homeassistant.core", callback=lambda fn: fn),
             "paho": module("paho"),
             "paho.mqtt": module("paho.mqtt"),
-            "paho.mqtt.client": module("paho.mqtt.client", Client=FakeClient),
+            "paho.mqtt.client": module("paho.mqtt.client", Client=FakeClient, MQTT_ERR_SUCCESS=0),
             "custom_components": module("custom_components"),
             "custom_components.euros_os": module("custom_components.euros_os"),
             "custom_components.euros_os.const": module(
@@ -388,6 +391,47 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.coordinator.disconnect()
         self.assertFalse(self.coordinator.check_stale(now=received + 61))
         self.assertEqual(self.loop.pending, [])
+
+    def test_failed_connect_stops_client_and_raises_for_retry(self):
+        fresh = self.coordinator_module.EurosOSMQTTCoordinator(
+            "127.0.0.1", "test/Dev", event_loop=self.loop,
+        )
+        with patch.object(FakeClient, "connect", side_effect=OSError("offline")):
+            with self.assertRaises(ConnectionError):
+                fresh.connect()
+        failed_client = FakeClient.instances[-1]
+        self.assertIsNone(fresh.client)
+        self.assertFalse(fresh.connected.is_set())
+        self.assertEqual(failed_client.loop_stop_calls, 1)
+
+    def test_missing_connack_raises_and_cleans_up(self):
+        fresh = self.coordinator_module.EurosOSMQTTCoordinator(
+            "127.0.0.1", "test/Dev", event_loop=self.loop,
+        )
+        with patch.object(FakeClient, "connect", lambda self, *args: None):
+            with patch.object(fresh.connected, "wait", return_value=False):
+                with self.assertRaises(ConnectionError):
+                    fresh.connect()
+        failed_client = FakeClient.instances[-1]
+        self.assertIsNone(fresh.client)
+        self.assertEqual(failed_client.loop_stop_calls, 1)
+
+    def test_mqtt_publish_acknowledgement_and_connection_status(self):
+        entry = {"device_model": "GEO_1", "device_type": "FriskoGEO", "device_version": "1"}
+        self.client.publish_rc = 0
+        self.assertTrue(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, entry)))
+        self.client.publish_rc = 7
+        self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, entry)))
+        self.assertEqual(len(self.client.published), 2)
+        self.client.simulate_disconnect()
+        self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, entry)))
+        self.assertEqual(len(self.client.published), 2)
+
+    def test_publish_exception_and_missing_identity_fail_closed(self):
+        entry = {"device_model": "GEO_1", "device_type": "FriskoGEO", "device_version": "1"}
+        self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, {})))
+        with patch.object(self.client, "publish", side_effect=OSError("offline")):
+            self.assertFalse(asyncio.run(self.coordinator.async_set_device_value({"SX5": 45}, entry)))
 
 
 if __name__ == "__main__":
