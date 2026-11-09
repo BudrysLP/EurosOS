@@ -63,7 +63,7 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
                 return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
             except Exception as e:
-                _LOGGER.exception("Error during MQTT validation: %s", e)
+                _LOGGER.warning("MQTT discovery validation failed (%s)", type(e).__name__)
                 errors["base"] = "unknown"
                 return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
@@ -86,7 +86,7 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
-                _LOGGER.debug("Connected to MQTT broker at %s:%s", ip, MQTT_PORT)
+                _LOGGER.debug("Connected to Euros OS MQTT broker for discovery")
                 client.subscribe(topic)
             else:
                 _LOGGER.error("Failed to connect to MQTT broker, rc=%s", rc)
@@ -113,7 +113,7 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             client.connect(ip, MQTT_PORT, 60)
         except Exception as e:
-            _LOGGER.error("Cannot connect to MQTT broker: %s", e)
+            _LOGGER.warning("MQTT discovery connection failed (%s)", type(e).__name__)
             raise CannotConnect
 
         client.loop_start()
