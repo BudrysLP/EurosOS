@@ -1,0 +1,131 @@
+# Euros OS — ETAP 9: główna lista kontrolna
+
+Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 NASTĘPNY.
+
+## Zasady
+
+- Odhaczamy dopiero po sprawdzeniu wyniku; źródłem prawdy jest ten dokument w repozytorium.
+- Najpierw testy i dokumentacja, potem końcowy PR. Nie otwieramy nowego PR przed 9.8.
+- Na tym etapie nie modyfikujemy instalacji produkcyjnej Home Assistant ani upstream/main.
+- P0/P1 blokują publikację, o ile nie zostały naprawione albo obiektywnie wyjaśnione.
+- Każda zmiana mająca wpływ na istniejące encje wymaga kontroli 73 identyfikatorów.
+
+## Odnośniki i punkt odniesienia
+
+- Ostatni przetestowany kod: `feature/stage8-ha-preflight` @ `12d2502091d2364e7cb1803eef3bd523a31618de`.
+- Gałąź dokumentacji ETAPU 9: `feature/stage9-audit`.
+- Audyt i rejestr usterek: [ETAP_9_1_AUDYT_TECHNICZNY.md](ETAP_9_1_AUDYT_TECHNICZNY.md).
+- Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
+- PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
+
+## Postęp
+
+- Ukończono: **8/69** zadań (11.6%).
+- Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
+- Następny podetap: **9.2 (0/8)** — bezpieczeństwo i niezawodność.
+
+## 9.1 — Audyt kodu źródłowego (8/8)
+
+- [x] **9.1.1** Zamrozić i zapisać punkt odniesienia: commit, gałąź, manifest, workflow oraz wynik CI.
+- [x] **9.1.2** Porównać aktualny kod z oryginalnym main autora i ustalić pełną listę zmian.
+- [x] **9.1.3** Sprawdzić __init__.py: inicjalizacja, rejestr urządzeń, reload, unload i sprzątanie zasobów.
+- [x] **9.1.4** Sprawdzić coordinator.py: MQTT, współbieżność, reconnect, timeouty, błędy i publikowanie poleceń.
+- [x] **9.1.5** Sprawdzić discovery.py, geo.py i ems.py: rozpoznawanie i parsowanie danych.
+- [x] **9.1.6** Sprawdzić sensor.py, number.py, select.py, switch.py oraz binary_sensor.py.
+- [x] **9.1.7** Sprawdzić config_flow.py, const.py, manifest.json i tłumaczenia.
+- [x] **9.1.8** Przygotować rejestr usterek z priorytetami P0/P1/P2 i planem poprawek.
+
+## 9.2 — Niezawodność i bezpieczeństwo (0/8)
+
+- [ ] **9.2.1** Zweryfikować zachowanie HA po przekroczeniu MQTT_TIMEOUT bez nowych wiadomości.
+- [ ] **9.2.2** Zweryfikować reconnect, wielokrotne reload/unload i brak pozostawionych wątków MQTT.
+- [ ] **9.2.3** Sprawdzić współbieżny dostęp do danych i bezpieczne przekazywanie aktualizacji do pętli HA.
+- [ ] **9.2.4** Zweryfikować obsługę błędnych JSON, NaN, braków pomiarów i duplikatów urządzeń.
+- [ ] **9.2.5** Zbadać TLS, weryfikację certyfikatu oraz sposób obsługi danych uwierzytelniających.
+- [ ] **9.2.6** Sprawdzić, czy logi nie ujawniają kluczy, haseł ani poufnych payloadów.
+- [ ] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
+- [ ] **9.2.8** Każdą potrzebną poprawkę opatrzyć testem regresyjnym.
+
+## 9.3 — Kompatybilność urządzeń i Home Assistant (0/9)
+
+- [ ] **9.3.1** Sprawdzić rozpoznawanie FriskoGEO, FriskoATMO i FriskoALLINONE.
+- [ ] **9.3.2** Zweryfikować wybór pompy niezależnie od kolejności Devices oraz bezpieczeństwo przy wielu pompach.
+- [ ] **9.3.3** Sprawdzić istniejące i nowe unique_id, entity_id i identyfikatory urządzeń.
+- [ ] **9.3.4** Sprawdzić natywne API SensorEntity, NumberEntity, SelectEntity i pozostałych encji.
+- [ ] **9.3.5** Zweryfikować device_class, state_class, jednostki pomiarowe i zgodność z panelem Energia.
+- [ ] **9.3.6** Sprawdzić zachowanie METER_1 i dodatkowych METER_N, bez fikcyjnych liczników.
+- [ ] **9.3.7** Sprawdzić odtwarzanie liczników dziennych, północ, zmianę dnia i przerwy w danych.
+- [ ] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11.
+- [ ] **9.3.9** Zweryfikować manifest, metadane HACS, instalację oraz ścieżkę aktualizacji bez utraty encji.
+
+## 9.4 — Rozszerzenie testów automatycznych (0/8)
+
+- [ ] **9.4.1** Uporządkować nazwy oraz wyzwalacze workflow, w tym uruchamianie na pull_request.
+- [ ] **9.4.2** Uruchamiać zestaw testów na Pythonie 3.12, 3.13 i 3.14, z uwzględnieniem kompatybilności zależności.
+- [ ] **9.4.3** Rozbudować testy inicjalizacji i wyładowania integracji z API Home Assistant.
+- [ ] **9.4.4** Przetestować automatyczne wykrywanie wielu pomp i liczników.
+- [ ] **9.4.5** Przetestować stale dane MQTT, rozłączenie, ponowne połączenie i wyścigi wątków.
+- [ ] **9.4.6** Przetestować przywracanie dziennych liczników i obsługę niepoprawnych odczytów.
+- [ ] **9.4.7** Przetestować blokady komend i zachowanie dotychczasowych kontrolek.
+- [ ] **9.4.8** Uzyskać zielony wynik wszystkich wymaganych testów bez pominięć i udokumentować zakres.
+
+## 9.5 — Ostateczna kontrola na rzeczywistym HA (0/8)
+
+- [ ] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem.
+- [ ] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA.
+- [ ] **9.5.3** Sprawdzić GEO_1, EMS Dom i dotychczasowe 73 encje po ewentualnych poprawkach.
+- [ ] **9.5.4** Sprawdzić bieżące aktualizacje oraz ciągłość historii energii przed i po restarcie.
+- [ ] **9.5.5** Zweryfikować zachowanie stale/unavailable i powrotu połączenia w sposób bezpieczny dla pompy.
+- [ ] **9.5.6** Przejrzeć logi po starcie oraz po okresie normalnej pracy.
+- [ ] **9.5.7** Udokumentować nieprzetestowane scenariusze sprzętowe, np. fizyczny METER_2.
+- [ ] **9.5.8** Potwierdzić, że nie ma powodów do rollbacku i że wersja nadaje się do wydania.
+
+## 9.6 — Dokumentacja i przygotowanie wydania (0/10)
+
+- [ ] **9.6.1** Przepisać README: możliwości, obsługiwane modele, wymagania, instalacja i aktualizacja.
+- [ ] **9.6.2** Opisać GEO: temperatury, stany, tryby i ograniczenia sterowania.
+- [ ] **9.6.3** Opisać EMS Dom: 35 encji, jednostki, źródła danych i znaczenie pomiarów.
+- [ ] **9.6.4** Opisać dynamiczne METER_N oraz brak gwarancji zgodności wszystkich liczników bez testów sprzętowych.
+- [ ] **9.6.5** Zaktualizować dokumentację ETAPU 8 o faktyczne wyniki z Home Assistant.
+- [ ] **9.6.6** Dodać instrukcję aktualizacji istniejącej instalacji bez kasowania urządzeń i historii.
+- [ ] **9.6.7** Dodać instrukcję diagnostyki, ograniczenia bezpieczeństwa oraz scenariusz cofnięcia aktualizacji.
+- [ ] **9.6.8** Sprawdzić polskie i angielskie nazwy oraz tłumaczenia.
+- [ ] **9.6.9** Ujednolicić metadane wersji; decyzję o numerze wydania pozostawić autorowi.
+- [ ] **9.6.10** Przygotować CHANGELOG i zwięzły raport testowy dla autora.
+
+## 9.7 — Czysta gałąź do upstream (0/7)
+
+- [ ] **9.7.1** Sprawdzić aktualny main autora przed przygotowaniem końcowej gałęzi.
+- [ ] **9.7.2** Rozstrzygnąć los PR #3 i uniknąć nakładających się poprawek.
+- [ ] **9.7.3** Utworzyć nową gałąź upstream od właściwego commitu main.
+- [ ] **9.7.4** Przenieść wyłącznie gotowy, zweryfikowany kod i potrzebne materiały.
+- [ ] **9.7.5** Ułożyć commity według obszarów: GEO, EMS, discovery, bezpieczeństwo, testy i dokumentacja.
+- [ ] **9.7.6** Usunąć zbędne pliki robocze, dane diagnostyczne i historyczne komentarze.
+- [ ] **9.7.7** Sprawdzić końcowy diff i ponownie uruchomić pełną CI na tej gałęzi.
+
+## 9.8 — Bramka jakości przed PR (0/7)
+
+- [ ] **9.8.1** Brak otwartych błędów P0 i P1; pozostałe ograniczenia świadomie zaakceptowane.
+- [ ] **9.8.2** Wszystkie wymagane testy zielone na końcowym commicie.
+- [ ] **9.8.3** Potwierdzona zgodność wsteczna i bezpieczeństwo sterowania.
+- [ ] **9.8.4** Dokumentacja, CHANGELOG i instrukcja aktualizacji gotowe.
+- [ ] **9.8.5** Sprawdzone, że PR nie obejmie przypadkowych plików ani sekretów.
+- [ ] **9.8.6** Przygotowany pełny opis PR i lista znanych ograniczeń.
+- [ ] **9.8.7** Uzyskać zgodę użytkownika na publikację końcowego PR.
+
+## 9.9 — Wysłanie jednego końcowego PR (0/4)
+
+- [ ] **9.9.1** Otworzyć PR z gotowej, przetestowanej gałęzi do repozytorium autora.
+- [ ] **9.9.2** Dołączyć raport CI, testy rzeczywistej instalacji i zakres wspieranych modeli.
+- [ ] **9.9.3** Udzielić odpowiedzi na ewentualne uwagi autora i wprowadzić poprawki z testami.
+- [ ] **9.9.4** Po akceptacji autora zaktualizować dokumentację projektu i uporządkować gałęzie robocze, bez samodzielnego scalania do upstream main.
+
+## Dziennik wykonania
+
+| Data | Zakres | Wynik | Dowód |
+| --- | --- | --- | --- |
+| 2026-11-09 | 9.1.1–9.1.8 | Ukończony audyt statyczny, 15 ustaleń (P1/P2), bez zmian w kodzie produkcyjnym | [Raport](ETAP_9_1_AUDYT_TECHNICZNY.md) |
+
+## Kolejny ruch
+
+Rozpocząć 9.2.1 i 9.2.7 od przygotowania reprodukowalnych testów bezpieczeństwa: stary stan po MQTT_TIMEOUT i spójna interpretacja EMS/AUTO. Wszystkie poprawki najpierw na gałęzi projektowej i w CI. Zmiany sterowania tylko po uzgodnieniu bezpieczeństwa.
