@@ -148,6 +148,49 @@ def accumulate_ems_daily_energy(day, accumulated, previous_meter_total, today, r
     return today, max(0.0, float(accumulated or 0.0)), value
 
 
+
+def discover_ems_sensor_keys(meter_name, readings):
+    """Which stable EMS sensor keys have been discovered for this meter?
+
+    Preserve the complete, historic METER_1 entity set once it is present.
+    For new meters, only create entities for finite readings actually reported;
+    later MQTT packets may reveal more supported fields.
+    """
+    if not isinstance(readings, dict):
+        return ()
+    if meter_name == EMS_DOM_METER_NAME:
+        return tuple(EMS_DOM_SENSOR_DEFINITIONS)
+    return tuple(
+        key for key in EMS_DOM_SENSOR_DEFINITIONS
+        if key in readings and parse_ems_numeric(readings[key]) is not None
+    )
+
+
+def discover_ems_daily_keys(meter_name, readings):
+    """Daily home import/export totals are defined only for historic METER_1.
+
+    Other meter roles are not known, so do not infer household import/export.
+    """
+    if meter_name == EMS_DOM_METER_NAME and isinstance(readings, dict):
+        return tuple(EMS_DOM_DAILY_SENSOR_DEFINITIONS)
+    return ()
+
+
+def ems_meter_device_name(meter_name):
+    """Retain legacy METER_1 device naming; distinguish additional meters."""
+    if meter_name == EMS_DOM_METER_NAME:
+        return EMS_DOM_DEVICE_NAME
+    return f"EMS – {meter_name}"
+
+
+def ems_meter_sensor_info(meter_name, key):
+    """Preserve historic METER_1 labels; use technical labels elsewhere."""
+    info = EMS_DOM_SENSOR_DEFINITIONS[key]
+    if meter_name == EMS_DOM_METER_NAME:
+        return info
+    return (f"EMS – {meter_name} – {key}", *info[1:])
+
+
 def extract_ems_meters(devices):
     """Return current METER_N -> Data mappings; ignore the pump and unknown devices.
 
