@@ -32,8 +32,11 @@ class EmsHelperDiscoveryTests(unittest.TestCase):
 
     def test_meter_one_keeps_all_existing_keys_and_names(self):
         ems = self.ems
-        self.assertEqual(len(ems.discover_ems_sensor_keys("METER_1", {})), 33)
-        self.assertEqual(len(ems.discover_ems_daily_keys("METER_1", {})), 2)
+        valid_meter = {"TOTAL_ACT_POW_FL_1": "0.025"}
+        self.assertEqual(len(ems.discover_ems_sensor_keys("METER_1", valid_meter)), 33)
+        self.assertEqual(len(ems.discover_ems_daily_keys("METER_1", valid_meter)), 2)
+        self.assertEqual(ems.discover_ems_sensor_keys("METER_1", {}), ())
+        self.assertEqual(ems.discover_ems_daily_keys("METER_1", {}), ())
         self.assertEqual(ems.ems_meter_device_name("METER_1"), "EMS – Dom")
         self.assertEqual(ems.ems_meter_sensor_info(
             "METER_1", "TOTAL_ACT_POW_FL_1"), ems.EMS_DOM_SENSOR_DEFINITIONS["TOTAL_ACT_POW_FL_1"])
