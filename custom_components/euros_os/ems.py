@@ -204,6 +204,7 @@ def extract_ems_meters(devices):
         return {}
 
     meters = {}
+    duplicates = set()
     for device in devices:
         if not isinstance(device, dict):
             continue
@@ -217,7 +218,15 @@ def extract_ems_meters(devices):
             and meter_type.upper() == "METER"
             and isinstance(data, dict)
         ):
-            meters[name.upper()] = data
+            normalized = name.upper()
+            if normalized in meters:
+                # Two reports for the same meter in one packet cannot be
+                # resolved safely by choosing the last encountered reading.
+                duplicates.add(normalized)
+            else:
+                meters[normalized] = data
+    for name in duplicates:
+        meters.pop(name, None)
     return meters
 
 
