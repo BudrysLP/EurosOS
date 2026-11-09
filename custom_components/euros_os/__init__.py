@@ -12,7 +12,10 @@ Description : Custom integration for EurosEnergy and E-On devices.
 ===============================================================================
 """
 
+from datetime import timedelta
+
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_KEY, CONF_IP
 from .coordinator import EurosOSMQTTCoordinator
@@ -87,6 +90,18 @@ async def async_setup_entry(hass, entry):
     if is_geo:
         # Also handle packets received before the listener was registered.
         _async_update_geo_device_info()
+
+    @callback
+    def _check_mqtt_staleness(_now):
+        # A silent broker cannot initiate its own unavailable state update.
+        # The coordinator notifies only on an actual freshness transition.
+        coordinator.check_stale()
+
+    hass.data[DOMAIN][entry.entry_id]["watchdog_unsub"] = (
+        async_track_time_interval(
+            hass, _check_mqtt_staleness, timedelta(seconds=10)
+        )
+    )
     return True
 
 async def async_unload_entry(hass, entry):
@@ -95,6 +110,9 @@ async def async_unload_entry(hass, entry):
         entry_state = hass.data[DOMAIN].pop(entry.entry_id, None)
         if entry_state:
             coordinator = entry_state["coordinator"]
+            watchdog_unsub = entry_state.get("watchdog_unsub")
+            if watchdog_unsub:
+                watchdog_unsub()
             for name in ("metadata_listener", "meter_discovery_listener"):
                 if listener := entry_state.get(name):
                     coordinator.async_remove_listener(listener)
