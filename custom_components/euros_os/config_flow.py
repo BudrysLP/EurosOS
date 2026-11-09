@@ -55,7 +55,7 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
             try:
-                _LOGGER.debug("Checking MQTT topic availability: %s on %s", topic, ip)
+                _LOGGER.debug("Checking Euros OS MQTT availability")
                 device_data = await self.hass.async_add_executor_job(
                     self._verify_mqtt_topic, ip, topic
                 )
@@ -102,7 +102,7 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         event.set()
                         client.disconnect()
             except Exception:
-                _LOGGER.warning("Received invalid JSON on %s", topic)
+                _LOGGER.warning("Ignoring malformed MQTT discovery message")
 
         client = mqtt.Client()
         client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
@@ -125,7 +125,7 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not payload_container:
             raise CannotConnect("No response from the device via MQTT.")
 
-        _LOGGER.debug("Received valid MQTT message: %s", payload_container["data"])
+        _LOGGER.debug("MQTT discovery received a supported pump")
         device_info = find_pump(payload_container["data"].get("Devices"))
         if device_info is None:
             raise CannotConnect("No unique supported heat pump in MQTT Devices.")
