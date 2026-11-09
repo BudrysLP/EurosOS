@@ -29,7 +29,11 @@ async def async_setup_entry(hass, entry):
     entry_data = entry.data.copy()
     topic = entry_data.get(CONF_KEY) + "/Dev"
     ip = entry_data.get(CONF_IP)
-    coordinator = EurosOSMQTTCoordinator(ip, topic)
+    coordinator = EurosOSMQTTCoordinator(
+        ip, topic,
+        pump_name=entry_data.get("device_model"),
+        pump_type=entry_data.get("device_type"),
+    )
     
     await hass.async_add_executor_job(coordinator.connect)
 
