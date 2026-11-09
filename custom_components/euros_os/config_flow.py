@@ -24,6 +24,7 @@ import voluptuous as vol
 import paho.mqtt.client as mqtt
 
 from homeassistant import config_entries
+from .discovery import find_pump
 from .const import DOMAIN, CONF_KEY, DEFAULT_KEY, CONF_IP, DEFAULT_IP, MQTT_USER, MQTT_PASSWORD, MQTT_PORT
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
@@ -123,7 +124,9 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             raise CannotConnect("No response from the device via MQTT.")
 
         _LOGGER.debug("Received valid MQTT message: %s", payload_container["data"])
-        device_info = payload_container["data"].get("Devices", [{}])[0]
+        device_info = find_pump(payload_container["data"].get("Devices"))
+        if device_info is None:
+            raise CannotConnect("No unique supported heat pump in MQTT Devices.")
         device_model = device_info.get("Name", "---")
         device_type = device_info.get("Type", "---")
         device_version = device_info.get("Version", "---")
