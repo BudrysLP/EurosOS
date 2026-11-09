@@ -23,6 +23,10 @@ def module(name, **attrs):
 class FakeLoop:
     def __init__(self):
         self.pending = []
+        self.closed = False
+
+    def is_closed(self):
+        return self.closed
 
     def call_soon_threadsafe(self, fn, *args):
         self.pending.append((fn, args))
@@ -39,6 +43,8 @@ class FakeClient:
     def __init__(self):
         self.published = []
         self.subscribed = []
+        self.disconnect_calls = 0
+        self.loop_stop_calls = 0
         FakeClient.instances.append(self)
 
     def username_pw_set(self, *args):
@@ -55,6 +61,12 @@ class FakeClient:
 
     def loop_start(self):
         pass
+
+    def loop_stop(self):
+        self.loop_stop_calls += 1
+
+    def disconnect(self):
+        self.disconnect_calls += 1
 
     def emit(self, devices):
         self.on_message(self, None, types.SimpleNamespace(
@@ -195,6 +207,34 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         FakeClient.instances[-1].emit([self.meter(), self.geo()])
         self.assertEqual(restarted.device["Name"], "GEO_1")
         self.assertEqual(set(restarted.ems_meters), {"METER_1"})
+
+    def test_unload_disconnects_worker_without_destroying_snapshots(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.loop.flush()
+        old_pump = self.coordinator.device
+        old_meters = self.coordinator.ems_meters
+        self.coordinator.disconnect()
+        self.assertIsNone(self.coordinator.client)
+        self.assertFalse(self.coordinator.connected.is_set())
+        self.assertEqual(self.client.disconnect_calls, 1)
+        self.assertEqual(self.client.loop_stop_calls, 1)
+        self.assertIs(self.coordinator.device, old_pump)
+        self.assertIs(self.coordinator.ems_meters, old_meters)
+        self.client.emit([self.geo(), self.meter("9.0")])
+        self.assertIs(self.coordinator.ems_meters, old_meters)
+        self.assertEqual(self.client.published, [])
+
+    def test_queued_callback_is_ignored_after_unload(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.assertTrue(self.loop.pending)
+        self.coordinator.disconnect()
+        self.loop.flush()
+        self.assertEqual(self.events, [])
+
+    def test_closed_ha_loop_does_not_accept_callbacks(self):
+        self.loop.closed = True
+        self.client.emit([self.geo(), self.meter()])
+        self.assertEqual(self.loop.pending, [])
 
     def test_loss_of_mqtt_does_not_clear_snapshot_or_publish(self):
         self.client.emit([self.geo(), self.meter()])
