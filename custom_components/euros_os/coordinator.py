@@ -82,6 +82,13 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         for listener in tuple(self._listeners):
             listener()
 
+    def pump_is_fresh(self, now=None):
+        """Whether the configured pump has reported recently enough for controls."""
+        if self._closed or self._last_update is None:
+            return False
+        current = time.time() if now is None else now
+        return current - self._last_update <= MQTT_TIMEOUT
+
     @callback
     def check_stale(self, now=None):
         """Notify HA once when an already-received MQTT snapshot expires.
@@ -251,6 +258,9 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
     async def async_set_device_value(self, data: dict, entry_data: dict = None):
         if not self.client or not self.connected.is_set():
             _LOGGER.warning("MQTT command rejected: connection is unavailable")
+            return False
+        if not self.pump_is_fresh():
+            _LOGGER.warning("MQTT command rejected: pump telemetry is stale")
             return False
 
         device_name = entry_data.get("device_model") if entry_data else None
