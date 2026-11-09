@@ -5,6 +5,7 @@ on:
     branches:
       - feature/auto-pump-discovery
       - feature/dynamic-ems-discovery
+      - feature/compatibility-safety
   workflow_dispatch:
 
 permissions:
