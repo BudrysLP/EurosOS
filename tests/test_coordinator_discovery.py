@@ -224,6 +224,22 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.assertIs(self.coordinator.ems_meters, old_meters)
         self.assertEqual(self.client.published, [])
 
+    def test_disconnect_is_idempotent(self):
+        self.coordinator.disconnect()
+        self.coordinator.disconnect()
+        self.assertEqual(self.client.disconnect_calls, 1)
+        self.assertEqual(self.client.loop_stop_calls, 1)
+
+    def test_disconnect_failure_still_stops_worker(self):
+        def fail_disconnect():
+            self.client.disconnect_calls += 1
+            raise OSError("broker unreachable")
+        self.client.disconnect = fail_disconnect
+        self.coordinator.disconnect()
+        self.assertIsNone(self.coordinator.client)
+        self.assertEqual(self.client.loop_stop_calls, 1)
+        self.assertFalse(self.coordinator.connected.is_set())
+
     def test_queued_callback_is_ignored_after_unload(self):
         self.client.emit([self.geo(), self.meter()])
         self.assertTrue(self.loop.pending)
