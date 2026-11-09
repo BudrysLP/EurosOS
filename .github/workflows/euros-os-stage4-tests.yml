@@ -1,3 +1,4 @@
+# Retry CI after GitHub internal server error (no test logic changes).
 name: Euros OS - Discovery regression tests
 
 on:
