@@ -33,6 +33,7 @@ async def async_setup_entry(hass, entry):
         ip, topic,
         pump_name=entry_data.get("device_model"),
         pump_type=entry_data.get("device_type"),
+        event_loop=hass.loop,
     )
     
     await hass.async_add_executor_job(coordinator.connect)
