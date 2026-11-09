@@ -93,6 +93,9 @@ async def async_unload_entry(hass, entry):
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         entry_state = hass.data[DOMAIN].pop(entry.entry_id, None)
-        if entry_state and (listener := entry_state.get("metadata_listener")):
-            entry_state["coordinator"].async_remove_listener(listener)
+        if entry_state:
+            coordinator = entry_state["coordinator"]
+            for name in ("metadata_listener", "meter_discovery_listener"):
+                if listener := entry_state.get(name):
+                    coordinator.async_remove_listener(listener)
     return unload_ok
