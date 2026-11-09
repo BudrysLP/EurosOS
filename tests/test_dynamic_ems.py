@@ -412,6 +412,33 @@ class DynamicEmsPlatformTests(unittest.TestCase):
         self.coordinator.ems_meters = {}
         self.assertFalse(entity.available)
 
+    def test_pump_sensor_staleness_sets_ha_availability_not_string(self):
+        import time
+        self.coordinator.device = {"Data": {"TSM16": "23.5"}}
+        self.coordinator._last_update = time.time()
+        pump = self.sensor.EurosOSSensor(
+            self.coordinator, "TSM16",
+            ("Source temperature", "°C", "mdi:thermometer", "temperature"),
+            "abcdef", {}, device_type="FriskoGEO",
+        )
+        self.assertTrue(pump.available)
+        self.assertEqual(pump.state, 23.5)
+        self.coordinator._last_update -= 61
+        self.assertFalse(pump.available)
+        # The last valid numeric reading is still in the snapshot;
+        # Home Assistant writes unavailable because available is False.
+        self.assertEqual(pump.state, 23.5)
+        self.assertEqual(pump._attr_unique_id, "abcdef_tsm16")
+
+    def test_missing_first_pump_snapshot_is_unavailable(self):
+        pump = self.sensor.EurosOSSensor(
+            self.coordinator, "TSM16",
+            ("Source temperature", "°C", "mdi:thermometer", "temperature"),
+            "abcdef", {}, device_type="FriskoGEO",
+        )
+        self.assertFalse(pump.available)
+        self.assertIsNone(pump.state)
+
 
 if __name__ == "__main__":
     unittest.main()
