@@ -95,10 +95,12 @@ class EurosOSConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         def on_message(client, userdata, msg):
             try:
                 payload = json.loads(msg.payload)
-                if "Devices" in payload:
-                    payload_container["data"] = payload
-                    event.set()
-                    client.disconnect()
+                if isinstance(payload, dict):
+                    pump = find_pump(payload.get("Devices"))
+                    if pump is not None:
+                        payload_container["data"] = payload
+                        event.set()
+                        client.disconnect()
             except Exception:
                 _LOGGER.warning("Received invalid JSON on %s", topic)
 
