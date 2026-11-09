@@ -275,6 +275,27 @@ class DynamicEmsPlatformTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first, ["abcdef_ems_meter_2_total_act_pow_fl_1"])
 
+    def test_missing_pump_temperature_is_unknown_not_zero(self):
+        import time
+        self.coordinator.device = {
+            "Name": "GEO_1", "Type": "FriskoGEO", "Data": {}
+        }
+        self.coordinator._last_update = time.time()
+        sensor = self.sensor.EurosOSSensor(
+            self.coordinator, "TSM16",
+            ("Temperature", "°C", "mdi:thermometer", "temperature"),
+            "abcdef", self.state["device_info"], device_type="FriskoGEO",
+        )
+        self.assertEqual(sensor.state, "unknown")
+        for raw in ("NaN", "inf", "broken", None):
+            with self.subTest(raw=raw):
+                self.coordinator.device["Data"] = {"TSM16": raw}
+                self.assertEqual(sensor.state, "unknown")
+        self.coordinator.device["Data"] = {"TSM16": "0"}
+        self.assertEqual(sensor.state, 0.0)
+        self.coordinator.device["Data"] = {"TSM16": "24.26"}
+        self.assertEqual(sensor.state, 24.3)
+
     def test_malformed_meter_reading_becomes_unavailable_not_zero(self):
         self.setup_platform()
         self.coordinator.ems_meters = {
