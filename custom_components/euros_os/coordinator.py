@@ -24,6 +24,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import callback
 from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD
 from .ems import extract_ems_meters, parse_ems_numeric
+from .discovery import find_pump
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
 
@@ -69,10 +70,12 @@ _EMS_NO_METER_LOG_INTERVAL = 300.0  # seconds
 
 class EurosOSMQTTCoordinator(DataUpdateCoordinator):
 
-    def __init__(self, ip, topic):
+    def __init__(self, ip, topic, pump_name=None, pump_type=None):
         super().__init__(None, _LOGGER, name="EurosOS")
         self.ip = ip
         self.topic = topic
+        self.pump_name = pump_name
+        self.pump_type = pump_type
         self.device = {}
         self.ems_meters = {}  # Current read-only METER_N data, separate from GEO.
         self.client = None
@@ -217,7 +220,11 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
                     meters = extract_ems_meters(devices)
                     self._log_ems_power_sample(meters, received_at, received_monotonic)
                     self.ems_meters = meters
-                    self.device = devices[0]
+                    pump = find_pump(devices, expected_name=self.pump_name, expected_type=self.pump_type)
+                    if pump is None:
+                        _LOGGER.warning("No unambiguous configured pump in MQTT Devices; retaining last pump state")
+                        return
+                    self.device = pump
                     self._last_update = received_at
                     _LOGGER.debug("Received MQTT payload: %s", self.device)
                     self._notify_listeners()
