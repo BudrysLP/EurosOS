@@ -174,12 +174,16 @@ class EurosOSSensor(SensorEntity):
 
 
     @property
-    def state(self):
-        if getattr(self.coordinator, "_last_update", None) is None:
-            return "unavailable"
-        if time.time() - self.coordinator._last_update > MQTT_TIMEOUT:
-            return "unavailable"
+    def available(self):
+        """Use HA's availability flag, not a literal 'unavailable' sensor value."""
+        last_update = getattr(self.coordinator, "_last_update", None)
+        return (
+            last_update is not None
+            and time.time() - last_update <= MQTT_TIMEOUT
+        )
 
+    @property
+    def state(self):
         device = self.coordinator.device
         if not device:
             return None
