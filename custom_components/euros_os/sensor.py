@@ -286,8 +286,9 @@ class EurosOSSensor(SensorEntity):
 
         if getattr(self, "_attr_device_class", None) == "temperature":
             try:
-                value = float(data.get(self.key, 0))
-                if value > 149 or value < -50:
+                # A missing sensor field is not a real zero measurement.
+                value = float(data.get(self.key))
+                if not -50 <= value <= 149:
                     return "unknown"
                 return round(value, 1)
             except (TypeError, ValueError):
