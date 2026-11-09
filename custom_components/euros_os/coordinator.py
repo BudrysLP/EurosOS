@@ -304,21 +304,22 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         client.on_message = on_message
         client.tls_set_context(ssl._create_unverified_context())
 
+        self.client = client
         try:
             client.connect(self.ip, MQTT_PORT, 60)
-        except Exception as e:
-            _LOGGER.error("Cannot connect to MQTT broker: %s", e)
-            return
-
-        self.client = client
-        client.loop_start()
-        if not self.connected.wait(timeout=5.0):
-            _LOGGER.error("Timeout waiting for MQTT connection to %s", self.ip)
+            client.loop_start()
+            if not self.connected.wait(timeout=5.0):
+                raise ConnectionError("MQTT connection acknowledgement timed out")
+        except Exception as exc:
+            # A failed setup must not leave a running Paho worker. HA can
+            # retry the config entry when the broker is reachable again.
+            self.disconnect()
+            raise ConnectionError("Euros OS MQTT connection unavailable") from exc
 
     # ------------------ DataSending ------------------
     async def async_set_device_value(self, data: dict, entry_data: dict = None):
-        if not self.client:
-            _LOGGER.warning("MQTT client not connected")
+        if not self.client or not self.connected.is_set():
+            _LOGGER.warning("MQTT command rejected: connection is unavailable")
             return False
 
         device_name = entry_data.get("device_model") if entry_data else None
@@ -326,10 +327,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         device_version = entry_data.get("device_version") if entry_data else None
 
         if not all([device_name, device_type, device_version]):
-            _LOGGER.error(
-                "Cannot publish: missing device info - "
-                f"device_name={device_name}, device_type={device_type}, device_version={device_version}"
-            )
+            _LOGGER.error("Cannot publish: incomplete device information")
             return False
 
         payload = json.dumps({
@@ -345,7 +343,15 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
 
         topic = self.topic.replace("/Dev", "") + "/App"
         _LOGGER.debug("Publishing Euros OS device command")
-        self.client.publish(topic, payload, retain=False)
+        try:
+            published = self.client.publish(topic, payload, retain=False)
+        except Exception as exc:
+            _LOGGER.warning("MQTT command publish failed (%s)", type(exc).__name__)
+            return False
+        if getattr(published, "rc", None) != mqtt.MQTT_ERR_SUCCESS:
+            _LOGGER.warning("MQTT command was not accepted by the client")
+            return False
+        # Accepted for sending is not confirmation that the pump applied it.
         return True
 
     # ------------------ DataUpdateCoordinator ------------------
