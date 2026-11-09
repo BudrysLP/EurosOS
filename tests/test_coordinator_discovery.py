@@ -372,10 +372,12 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
     def test_meter_only_recovery_does_not_refresh_stale_pump(self):
         self.client.emit([self.geo(), self.meter()])
         received = self.coordinator._last_update
-        self.assertTrue(self.coordinator.check_stale(now=received + 61))
+        self.coordinator._last_update = received - 61
+        self.coordinator._meter_last_update["METER_1"] = received - 61
+        self.assertTrue(self.coordinator.check_stale(now=received))
         self.client.emit([self.meter("0.33")])
-        self.assertEqual(self.coordinator._last_update, received)
-        self.assertFalse(self.coordinator.check_stale(now=received + 61))
+        self.assertEqual(self.coordinator._last_update, received - 61)
+        self.assertFalse(self.coordinator.check_stale(now=received))
         self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "0.33")
         self.assertEqual(self.client.published, [])
 
