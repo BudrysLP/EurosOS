@@ -233,7 +233,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
 
                 self._notify_listeners()
             except Exception as e:
-                _LOGGER.warning("Ignoring malformed MQTT telemetry (%s)", type(e).__name__)
+                _LOGGER.debug("Ignoring malformed MQTT telemetry (%s)", type(e).__name__)
 
         client = mqtt.Client()
         client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
