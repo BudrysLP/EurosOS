@@ -1,9 +1,10 @@
-name: Euros OS - Stage 4 tests
+name: Euros OS - Discovery regression tests
 
 on:
   push:
     branches:
       - feature/auto-pump-discovery
+      - feature/dynamic-ems-discovery
   workflow_dispatch:
 
 permissions:
