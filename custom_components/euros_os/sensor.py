@@ -14,6 +14,7 @@ Description : Custom integration for EurosEnergy and E-On devices.
 
 import logging
 import time
+from homeassistant.helpers import device_registry as dr
 from homeassistant.components.sensor import RestoreSensor, SensorEntity
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.event import async_track_time_change
@@ -79,13 +80,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
             )
 
     if device_type == GEO_DEVICE_TYPE:
+        # Register or find the parent pump before adding the logical EMS meter.
+        # HA's via_device_id expects the device registry ID, not an identifier tuple.
+        parent_device = dr.async_get(hass).async_get_or_create(
+            config_entry_id=entry.entry_id,
+            **device_info,
+        )
         # A separate logical device: METER_1 measures the entire grid connection,
         # not the electricity consumption of the heat pump alone.
         meter_device_info = {
             "identifiers": {(DOMAIN, f"{unique_prefix}_ems_meter_1")},
             "name": EMS_DOM_DEVICE_NAME,
             "model": EMS_DOM_METER_NAME,
-            "via_device": (DOMAIN, unique_prefix),
+            "via_device_id": parent_device.id,
         }
         for key, info in EMS_DOM_SENSOR_DEFINITIONS.items():
             entities.append(
