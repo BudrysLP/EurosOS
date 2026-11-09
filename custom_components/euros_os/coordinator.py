@@ -105,8 +105,13 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         if self._closed:
             return
         if self._event_loop is not None:
-            if not self._event_loop.is_closed():
+            if self._event_loop.is_closed():
+                return
+            try:
                 self._event_loop.call_soon_threadsafe(self._dispatch_listeners)
+            except RuntimeError:
+                # HA may close its event loop between is_closed() and queueing.
+                _LOGGER.debug("Skipping MQTT update: Home Assistant loop is closed")
         else:
             self._dispatch_listeners()
 
@@ -249,6 +254,11 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
             else:
                 _LOGGER.error("Failed to connect to MQTT broker, rc=%s", rc)
 
+        def on_disconnect(client, userdata, rc, *args):
+            self.connected.clear()
+            if not self._closed and rc != 0:
+                _LOGGER.warning("MQTT connection lost (rc=%s); retaining last valid readings", rc)
+
         def on_message(client, userdata, msg):
             if self._closed:
                 return
@@ -310,6 +320,7 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         client = mqtt.Client()
         client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
         client.on_connect = on_connect
+        client.on_disconnect = on_disconnect
         client.on_message = on_message
         client.tls_set_context(ssl._create_unverified_context())
 
