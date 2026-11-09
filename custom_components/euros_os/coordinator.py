@@ -16,57 +16,17 @@ import threading
 import time
 import json
 import logging
-import math
-import re
 import ssl
 import paho.mqtt.client as mqtt
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import callback
 from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD, MQTT_TIMEOUT
-from .ems import extract_ems_meters, parse_ems_numeric
+from .ems import extract_ems_meters
 from .discovery import find_pump
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
 
-# Temporary, read-only EMS diagnostics. Only documented numeric meter fields
-# are logged; credentials, identifiers and raw GEO payloads are never included.
-_EMS_METER_FIELDS = frozenset({
-    "A_PHA_VOLT_FL_1",
-    "B_PHA_VOLT_FL_1",
-    "C_PHA_VOLT_FL_1",
-    "AB_LINE_VOLT_FL_1",
-    "BC_LINE_VOLT_FL_1",
-    "CA_LINE_VOLT_FL_1",
-    "A_PHA_CUR_FL_1",
-    "B_PHA_CUR_FL_1",
-    "C_PHA_CUR_FL_1",
-    "A_PHA_ACT_POW_FL_1",
-    "B_PHA_ACT_POW_FL_1",
-    "C_PHA_ACT_POW_FL_1",
-    "TOTAL_ACT_POW_FL_1",
-    "A_ACT_POW_FL_1",
-    "B_ACT_POW_FL_1",
-    "C_ACT_POW_FL_1",
-    "TOTAL_RACT_POW_FL_1",
-    "A_PHA_VIEW_POW_FL_1",
-    "B_PHA_VIEW_POW_FL_1",
-    "C_PHA_VIEW_POW_FL_1",
-    "TOTAL_APPA_POWER_FL_1",
-    "A_PHA_POW_FAC_FL_1",
-    "B_PHA_POW_FAC_FL_1",
-    "C_PHA_POW_FAC_FL_1",
-    "TOTAL_POW_FAC_FL_1",
-    "FREQUENCY_FL_1",
-    "POS_ACT_POW_FL_1",
-    "REW_ACT_POW_FL_1",
-    "POS_REAC_POW_FL_1",
-    "REW_REAC_POW_FL_1",
-    "POS_ACT_POW_FACTOR",
-    "REV_ACT_POW_FACTOR",
-    "TOTAL_ACT_POW_FACTOR",
-})
-_EMS_METER_LOG_INTERVAL = 30.0  # seconds
-_EMS_NO_METER_LOG_INTERVAL = 300.0  # seconds
+_EMS_NO_METER_LOG_INTERVAL = 300.0  # seconds, only when DEBUG is enabled
 
 class EurosOSMQTTCoordinator(DataUpdateCoordinator):
 
@@ -86,8 +46,6 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
         self._last_update = None
         self._listeners = []
         self._last_ems_diagnostic = None
-        self._last_ems_meter_present = None
-        self._last_ems_power_received = None
         self._reported_stale_pump = False
         self._reported_stale_meters = frozenset()
 
@@ -176,32 +134,6 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
             len(devices), meter_count,
         )
 
-    def _log_ems_power_sample(self, meters, received_at, received_monotonic):
-        """Log each valid METER_1 power sample only when DEBUG is enabled.
-
-        Times represent MQTT reception, not the physical meter sampling time.
-        Never log the complete payload, credentials, or device identifiers.
-        """
-        if not _LOGGER.isEnabledFor(logging.DEBUG):
-            return
-        reading = meters.get("METER_1")
-        if not isinstance(reading, dict):
-            return
-        power_kw = parse_ems_numeric(reading.get("TOTAL_ACT_POW_FL_1"))
-        if power_kw is None:
-            return
-        elapsed = (
-            None if self._last_ems_power_received is None
-            else round(received_monotonic - self._last_ems_power_received, 3)
-        )
-        self._last_ems_power_received = received_monotonic
-        _LOGGER.debug(
-            "[EMS_POWER_SAMPLE] received_unix=%.3f power_kw=%.6f "
-            "power_w=%.3f delta_receive_s=%s",
-            received_at, power_kw, power_kw * 1000,
-            elapsed if elapsed is not None else "first",
-        )
-
     # ------------------ MQTT ------------------
     def disconnect(self):
         """Stop the MQTT worker when the HA config entry is unloaded.
@@ -218,18 +150,18 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
             client.disconnect()
         except Exception as exc:
             # A broker/socket failure must not block unloading the HA entry.
-            _LOGGER.warning("MQTT disconnect failed: %s", exc)
+            _LOGGER.warning("MQTT disconnect failed (%s)", type(exc).__name__)
         finally:
             try:
                 client.loop_stop()
             except Exception as exc:
-                _LOGGER.warning("MQTT worker shutdown failed: %s", exc)
+                _LOGGER.warning("MQTT worker shutdown failed (%s)", type(exc).__name__)
 
     def connect(self):
         self._closed = False
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
-                _LOGGER.debug("Connected to MQTT broker at %s", self.ip)
+                _LOGGER.debug("Connected to Euros OS MQTT broker")
                 client.subscribe(self.topic)
                 self.connected.set()
             else:
@@ -253,7 +185,6 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
 
                 self._log_ems_diagnostics(devices)
                 received_at = time.time()
-                received_monotonic = time.monotonic()
                 pump = find_pump(
                     devices, expected_name=self.pump_name, expected_type=self.pump_type
                 )
