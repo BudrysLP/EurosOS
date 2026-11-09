@@ -98,4 +98,6 @@ async def async_unload_entry(hass, entry):
             for name in ("metadata_listener", "meter_discovery_listener"):
                 if listener := entry_state.get(name):
                     coordinator.async_remove_listener(listener)
+            # Do not leave a Paho MQTT worker running after unloading/reloading.
+            await hass.async_add_executor_job(coordinator.disconnect)
     return unload_ok
