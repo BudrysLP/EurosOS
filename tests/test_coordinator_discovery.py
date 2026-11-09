@@ -69,9 +69,13 @@ class FakeClient:
         self.disconnect_calls += 1
 
     def emit(self, devices):
-        self.on_message(self, None, types.SimpleNamespace(
-            payload=json.dumps({"Devices": devices}).encode()
-        ))
+        self.emit_raw(json.dumps({"Devices": devices}).encode())
+
+    def emit_raw(self, payload):
+        self.on_message(self, None, types.SimpleNamespace(payload=payload))
+
+    def simulate_disconnect(self, rc=7):
+        self.on_disconnect(self, None, rc)
 
     def publish(self, *args, **kwargs):
         self.published.append((args, kwargs))
@@ -251,6 +255,84 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.loop.closed = True
         self.client.emit([self.geo(), self.meter()])
         self.assertEqual(self.loop.pending, [])
+
+    def test_broken_json_and_unexpected_payload_types_are_ignored(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.loop.flush()
+        snapshot = (self.coordinator.device, self.coordinator.ems_meters,
+                    self.coordinator._last_update, self.coordinator._meter_last_update)
+        for invalid in (
+            b"{malformed",
+            b"null",
+            b"[]",
+            b'"hello"',
+            b'{"Devices":"not a list"}',
+            b'{"Devices":[]}',
+            b'{"WrongField":[]}',
+        ):
+            with self.subTest(invalid=invalid):
+                self.client.emit_raw(invalid)
+                self.assertEqual(
+                    (self.coordinator.device, self.coordinator.ems_meters,
+                     self.coordinator._last_update, self.coordinator._meter_last_update),
+                    snapshot,
+                )
+        self.assertEqual(self.loop.pending, [])
+        self.assertEqual(self.client.published, [])
+
+    def test_malformed_pump_packet_cannot_update_attached_meter(self):
+        self.client.emit([self.geo(), self.meter()])
+        before = self.coordinator.ems_meters
+        invalid_pump = {"Name": "GEO_1", "Type": "FriskoGEO", "Data": None}
+        self.client.emit([invalid_pump, self.meter("999")])
+        self.assertIs(self.coordinator.ems_meters, before)
+        self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "0.168")
+
+    def test_ambiguous_duplicate_pump_is_rejected(self):
+        self.client.emit([self.geo(), self.meter()])
+        before = self.coordinator.ems_meters
+        self.client.emit([self.geo(), self.geo(), self.meter("999")])
+        self.assertIs(self.coordinator.ems_meters, before)
+
+    def test_multiple_meter_partial_refresh_preserves_other_meters(self):
+        meter2 = {"Name": "METER_2", "Type": "METER",
+                  "Data": {"TOTAL_ACT_POW_FL_1": "0.023"}}
+        self.client.emit([meter2, self.geo(), self.meter()])
+        old_pump_time = self.coordinator._last_update
+        old_meter1 = self.coordinator._meter_last_update["METER_1"]
+        meter3 = {"Name": "METER_3", "Type": "METER",
+                  "Data": {"TOTAL_ACT_POW_FL_1": "-0.11"}}
+        self.client.emit([meter3, meter2])
+        self.assertEqual(self.coordinator._last_update, old_pump_time)
+        self.assertEqual(self.coordinator._meter_last_update["METER_1"], old_meter1)
+        self.assertEqual(set(self.coordinator.ems_meters), {"METER_1", "METER_2", "METER_3"})
+        self.assertEqual(self.coordinator.ems_meters["METER_3"]["TOTAL_ACT_POW_FL_1"], "-0.11")
+        self.assertEqual(self.client.published, [])
+
+    def test_duplicate_meter_packet_is_not_last_wins(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.client.emit([self.geo(), self.meter("0.1"), self.meter("1000")])
+        self.assertNotIn("METER_1", self.coordinator.ems_meters)
+        self.assertNotIn("METER_1", self.coordinator._meter_last_update)
+
+    def test_network_disconnect_then_reconnect_preserves_state(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.client.simulate_disconnect(rc=7)
+        self.assertFalse(self.coordinator.connected.is_set())
+        self.assertEqual(self.coordinator.device["Name"], "GEO_1")
+        self.assertIn("METER_1", self.coordinator.ems_meters)
+        self.client.on_connect(self.client, None, None, 0)
+        self.assertTrue(self.coordinator.connected.is_set())
+        self.client.emit([self.geo(), self.meter("0.25")])
+        self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "0.25")
+
+    def test_closed_loop_race_does_not_crash_mqtt_thread(self):
+        def closed_between_check_and_schedule(*args):
+            raise RuntimeError("Event loop is closed")
+        self.loop.call_soon_threadsafe = closed_between_check_and_schedule
+        self.client.emit([self.geo(), self.meter()])
+        self.assertEqual(self.coordinator.device["Name"], "GEO_1")
+        self.assertEqual(self.client.published, [])
 
     def test_loss_of_mqtt_does_not_clear_snapshot_or_publish(self):
         self.client.emit([self.geo(), self.meter()])
