@@ -45,6 +45,29 @@ class PumpDiscoveryTests(unittest.TestCase):
                                                expected_name="GEO_1",
                                                expected_type="FriskoGEO"))
 
+    def test_geo_with_ems_keeps_pump_identity(self):
+        devices = [
+            {"Name": "METER_1", "Type": "METER", "Data": {"TOTAL_ACT_POW_FL_1": "0.067"}},
+            pump("GEO_1", "FriskoGEO"),
+        ]
+        self.assertEqual(
+            discovery.find_pump(devices, expected_name="GEO_1", expected_type="FriskoGEO"),
+            devices[1],
+        )
+
+    def test_allinone_without_ems(self):
+        devices = [pump("ALLINONE_1", "FriskoALLINONE")]
+        self.assertEqual(discovery.find_pump(devices), devices[0])
+
+    def test_meter_only_packet_does_not_select_pump(self):
+        devices = [{"Name": "METER_1", "Type": "METER", "Data": {"TOTAL_ACT_POW_FL_1": "1"}}]
+        self.assertIsNone(discovery.find_pump(devices, expected_name="GEO_1", expected_type="FriskoGEO"))
+
+    def test_expected_type_prevents_model_switch(self):
+        devices = [pump("GEO_1", "FriskoALLINONE")]
+        self.assertIsNone(discovery.find_pump(devices, expected_name="GEO_1", expected_type="FriskoGEO"))
+
+
 
 if __name__ == "__main__":
     unittest.main()
