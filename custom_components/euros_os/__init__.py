@@ -15,6 +15,7 @@ Description : Custom integration for EurosEnergy and E-On devices.
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_KEY, CONF_IP
@@ -39,7 +40,10 @@ async def async_setup_entry(hass, entry):
         event_loop=hass.loop,
     )
     
-    await hass.async_add_executor_job(coordinator.connect)
+    try:
+        await hass.async_add_executor_job(coordinator.connect)
+    except ConnectionError as exc:
+        raise ConfigEntryNotReady("Euros OS MQTT connection unavailable") from exc
 
     is_geo = entry_data.get("device_type") == GEO_DEVICE_TYPE
     device_info = {
