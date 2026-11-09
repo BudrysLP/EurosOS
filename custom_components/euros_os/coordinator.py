@@ -24,7 +24,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import callback
 from .const import MQTT_PORT, MQTT_USER, MQTT_PASSWORD
 from .ems import extract_ems_meters, parse_ems_numeric
-from .discovery import SUPPORTED_PUMP_TYPES, find_pump
+from .discovery import find_pump
 
 _LOGGER = logging.getLogger("custom_components.euros_os")
 
@@ -238,24 +238,27 @@ class EurosOSMQTTCoordinator(DataUpdateCoordinator):
                 meters = extract_ems_meters(devices)
 
                 if pump is None:
-                    # Reject packets containing another/ambiguous pump. Only
-                    # unambiguous meter-only packets may update EMS separately.
-                    has_pump = any(
+                    # Only accept packets made entirely of METER devices.
+                    # Another/ambiguous/unknown pump must never masquerade
+                    # as a meter-only update to this configured entry.
+                    meter_only = all(
                         isinstance(device, dict)
-                        and device.get("Type") in SUPPORTED_PUMP_TYPES
+                        and isinstance(device.get("Type"), str)
+                        and device["Type"].upper() == "METER"
                         for device in devices
                     )
-                    if has_pump or not meters:
+                    if not meter_only or not meters:
                         _LOGGER.debug("Ignoring MQTT packet without configured pump or usable meters")
                         return
 
-                    # A meter-only update must not refresh the pump's last
-                    # update time or overwrite its state; do not drop other
-                    # known meters from partial meter-only packets.
-                    self.ems_meters.update(meters)
-                    self._meter_last_update.update(
-                        {name: received_at for name in meters}
-                    )
+                    # A meter-only update must not refresh pump freshness.
+                    # Replace mapping snapshots atomically: HA may iterate
+                    # the old mappings on its event loop simultaneously.
+                    self.ems_meters = {**self.ems_meters, **meters}
+                    self._meter_last_update = {
+                        **self._meter_last_update,
+                        **{name: received_at for name in meters},
+                    }
                 else:
                     # Pump-containing /Dev payload is a complete snapshot.
                     # Missing meters become unavailable but registered HA
