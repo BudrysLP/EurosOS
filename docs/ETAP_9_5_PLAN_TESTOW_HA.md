@@ -15,13 +15,13 @@
 
 ## B. Główne bramki przed jakąkolwiek ingerencją
 
-**9.5.1 — Kopie zapasowe / CZĘŚCIOWO POTWIERDZONE 12.11.2026**
+**9.5.1 — Kopie zapasowe / ZAKOŃCZONE NA PODSTAWIE POTWIERDZENIA OPERATORA 12.11.2026**
 
-**Potwierdzenie archiwum integracji:** użytkownik utworzył 12.11.2026 o 18:17 prywatne archiwum `/config/euros_os_stage9_private/euros_os_before_stage9_20261112.tar.gz` o rozmiarze **66,5 KB** (wynik `ls -lh`). Zrzut terminala potwierdza zakończenie bez błędów poleceń `tar -czf`, `tar -tzf` i sprawdzenia katalogu. Archiwum powstało z aktualnego `/config/custom_components/euros_os` z `umask 077`; wynik uprawnień `-rw-------`. To zabezpiecza kod integracji, ale nie dowodzi samodzielnie zawartości ani możliwości przywrócenia pełnego backupu HA. Warto również przechować ten niewielki plik poza HA. Nadal nie potwierdzono dostępu do klucza odzyskiwania oraz zakresu/odtwarzalności najnowszej pełnej kopii. **Punkt 9.5.1 pozostaje otwarty.**
+**Potwierdzenie archiwum integracji:** użytkownik utworzył 12.11.2026 o 18:17 prywatne archiwum `/config/euros_os_stage9_private/euros_os_before_stage9_20261112.tar.gz` o rozmiarze **66,5 KB** (wynik `ls -lh`). Zrzut terminala potwierdza zakończenie bez błędów poleceń `tar -czf`, `tar -tzf` i sprawdzenia katalogu. Archiwum powstało z aktualnego `/config/custom_components/euros_os` z `umask 077`; wynik uprawnień `-rw-------`. To zabezpiecza kod integracji, ale nie dowodzi samodzielnie zawartości ani możliwości przywrócenia pełnego backupu HA. Warto również przechować ten niewielki plik poza HA. **Operator potwierdził posiadanie klucza Emergency Kit oraz że pobrana na komputer pełna kopia HA 1,2 GB obejmuje konfigurację i historię.** Punkt 9.5.1 zamknięty na podstawie tego potwierdzenia; **nie przeprowadzano próby odtworzenia** całego HA. Archiwum katalogu integracji zostało zapisane lokalnie; warto także przechowywać je poza HA.
 
-Na podstawie zrzutu ekranu Home Assistant użytkownik potwierdził, że na liście automatycznych backupów widoczne są **trzy** kopie, w tym najnowsza „Automatic backup 2026.11.1”, **1,2 GB**, oznaczona jako utworzona „2 minuty temu” w chwili zrzutu; starsze to „Automatic backup 2026.11.1” (1,15 GB, „9 godzin temu”) i „Automatic backup 2026.11.0” (1,13 GB, „wczoraj”). Zrzut potwierdza istnienie *wpisów* i wyświetlane rozmiary. Użytkownik następnie potwierdził pobranie najnowszej kopii na komputer. Nie zostały niezależnie zweryfikowane jej kompletność, możliwość odtworzenia, dostęp do klucza szyfrowania ani osobna bieżąca kopia integracji.
+Na podstawie zrzutu ekranu Home Assistant użytkownik potwierdził, że na liście automatycznych backupów widoczne są **trzy** kopie, w tym najnowsza „Automatic backup 2026.11.1”, **1,2 GB**, oznaczona jako utworzona „2 minuty temu” w chwili zrzutu; starsze to „Automatic backup 2026.11.1” (1,15 GB, „9 godzin temu”) i „Automatic backup 2026.11.0” (1,13 GB, „wczoraj”). Zrzut potwierdza istnienie *wpisów* i wyświetlane rozmiary. Użytkownik następnie potwierdził pobranie najnowszej kopii na komputer. Operator potwierdził pełny zakres (konfiguracja i historia) oraz posiadanie klucza szyfrowania; osobne archiwum aktualnej integracji zostało zapisane i sprawdzone przez `tar -tzf`. Nie wykonywano technicznej próby pełnego odtworzenia.
 
-**Do zamknięcia 9.5.1 nadal wymagane**: sprawdzenie zakresu i stanu najnowszego backupu (czy obejmuje konfigurację i Recorder), **pobranie kopii poza HA — potwierdzone przez operatora**, dostęp do emergency kit, **osobne archiwum obecnego folderu `/config/custom_components/euros_os` — wykonane i sprawdzone przez operatora (66,5 KB, `tar -tzf` OK)**. Pozostaje kontrola zakresu pełnego backupu i potwierdzenie dostępności klucza do odzyskania. Zrzut nie stanowi zgody na instalację, restart ani modyfikację konfiguracji.
+**Przesłanki zaliczenia 9.5.1:** pobranie pełnej kopii poza HA (potwierdzone), zakres obejmujący konfigurację i historię (potwierdzony przez operatora), dostępność Emergency Kit (potwierdzona), aktualne archiwum katalogu integracji 66,5 KB z poprawną kontrolą `tar -tzf` (potwierdzone). Nie stanowi to wyniku próbnego odtwarzania kopii ani zgody na instalację, restart lub ingerencję w pompę. Kopie należy odświeżyć, jeśli konfiguracja zmieni się przed wdrożeniem.
 
 
 
@@ -106,13 +106,13 @@ Potwierdzony komunikat: `Private baseline saved: 73 entities, 2 devices.`
 
 **Wniosek:** prywatny plik `before.json` został utworzony, a narzędzie odczytało 73 encje i 2 urządzenia oraz przeszło swoje podstawowe kontrole tożsamości rejestrowej. Nie odczytano pliku zdalnie i nie należy go kopiować do GitHub ani na czat. Komunikat nie potwierdza jeszcze zachowania tej tożsamości *po aktualizacji*, funkcjonowania wszystkich encji ani bieżącego SHA faktycznie zainstalowanej integracji.
 
-**Nie tworzyć drugiego `before.json` i nie nadpisywać istniejącego pliku.** Przed jakimkolwiek wdrożeniem pozostają do potwierdzenia: osobna aktualna kopia katalogu `euros_os`, dostęp do klucza odzyskiwania pełnego backupu, stan bieżącego kodu oraz decyzja operatora o zakresie testów. Żaden restart ani wdrożenie nie nastąpił przy tym odczycie.
+**Nie tworzyć drugiego `before.json` i nie nadpisywać istniejącego pliku.** Archiwum katalogu `euros_os`, klucz odzyskiwania i zakres pełnej kopii zostały potwierdzone. Przed jakimkolwiek wdrożeniem nadal trzeba zidentyfikować obecnie działający kod, uzgodnić zakres testów i uzyskać osobną zgodę operatora. Żaden restart ani wdrożenie nie nastąpił przy tym odczycie.
 
 ## D. Scenariusze na rzeczywistym HA — do wykonania po zgodzie
 
 | Kod | Kroki | Kryterium zaliczenia | Status |
 | --- | --- | --- | --- |
-| HA9-01 | Przed zmianą: snapshot rejestru i wersja HA | 73/73 encje, 2 urządzenia, kopia prywatna, znany SHA aktualnego kodu | **CZĘŚCIOWO:** snapshot 73/2 zapisany 12.11.2026. Do potwierdzenia aktualny SHA i kompletność kopii bezpieczeństwa |
+| HA9-01 | Przed zmianą: snapshot rejestru i wersja HA | 73/73 encje, 2 urządzenia, kopia prywatna, znany SHA aktualnego kodu | **CZĘŚCIOWO:** snapshot 73/2 i zabezpieczenia 9.5.1 potwierdzone, nadal należy potwierdzić SHA faktycznie zainstalowanego kodu |
 | HA9-02 | Po instalacji: setup GEO_1 i METER_1 | 2 urządzenia, 38+35 encji, żadnej zmiany ID, brak duplikatów | ⏳ NIE WYKONANO |
 | HA9-03 | Po instalacji: odczyty GEO | Temperatury, tryb, stany pomp, CWU i FW prawidłowe i dostępne, bez fikcyjnych zer | ⏳ NIE WYKONANO |
 | HA9-04 | Po instalacji: EMS Dom | Moc, import/eksport i 2 liczniki dzienne są aktualne, nie mieszają danych pompy i domu | ⏳ NIE WYKONANO |
