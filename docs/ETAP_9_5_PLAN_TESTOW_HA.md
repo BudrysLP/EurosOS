@@ -15,7 +15,13 @@
 
 ## B. Główne bramki przed jakąkolwiek ingerencją
 
-**9.5.1 — Kopie zapasowe / NIE POTWIERDZONO NA DZISIAJ**
+**9.5.1 — Kopie zapasowe / CZĘŚCIOWO POTWIERDZONE 12.11.2026**
+
+Na podstawie zrzutu ekranu Home Assistant użytkownik potwierdził, że na liście automatycznych backupów widoczne są **trzy** kopie, w tym najnowsza „Automatic backup 2026.11.1”, **1,2 GB**, oznaczona jako utworzona „2 minuty temu” w chwili zrzutu; starsze to „Automatic backup 2026.11.1” (1,15 GB, „9 godzin temu”) i „Automatic backup 2026.11.0” (1,13 GB, „wczoraj”). Zrzut potwierdza istnienie *wpisów* i wyświetlane rozmiary, nie potwierdza kompletności, możliwości odtworzenia, pobrania kopii na komputer ani posiadania klucza szyfrowania.
+
+**Do zamknięcia 9.5.1 nadal wymagane**: sprawdzenie zakresu i stanu najnowszego backupu (czy obejmuje konfigurację i Recorder), prywatna kopia na urządzeniu poza HA, dostęp do emergency kit, osobna kopia obecnego folderu `/config/custom_components/euros_os` i potwierdzenie jej niezerowego rozmiaru. Zrzut nie stanowi zgody na instalację, restart ani modyfikację konfiguracji.
+
+
 
 1. Na HA przejść do **Ustawienia → System → Kopie zapasowe** i wykonać NOWĄ pełną kopię, obejmującą aktualną konfigurację i historię Recorder (w przypadku zewnętrznej bazy osobny backup danych).
 2. Pobrać backup poza urządzenie HA, sprawdzić niezerowy rozmiar i zachować właściwy **emergency kit / klucz szyfrowania** w bezpiecznej lokalizacji. Nie publikować backupu i klucza ani nie załączać ich do GitHub, zgłoszeń czy rozmów.
