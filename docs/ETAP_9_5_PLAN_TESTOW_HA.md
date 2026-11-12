@@ -108,6 +108,22 @@ Potwierdzony komunikat: `Private baseline saved: 73 entities, 2 devices.`
 
 **Nie tworzyć drugiego `before.json` i nie nadpisywać istniejącego pliku.** Archiwum katalogu `euros_os`, klucz odzyskiwania i zakres pełnej kopii zostały potwierdzone. Przed jakimkolwiek wdrożeniem nadal trzeba zidentyfikować obecnie działający kod, uzgodnić zakres testów i uzyskać osobną zgodę operatora. Żaden restart ani wdrożenie nie nastąpił przy tym odczycie.
 
+## C.3. Weryfikacja kodu działającej integracji — 12 listopada 2026
+
+Użytkownik wykonał **read-only porównanie SHA-256** 4 kluczowych plików obecnie zainstalowanych w `/config/custom_components/euros_os/` z ich odpowiednikami w commicie
+`12d2502091d2364e7cb1803eef3bd523a31618de` (ETAP 8).
+
+| Plik | Wynik |
+| --- | --- |
+| `__init__.py` | **SHA-256 zgodny** |
+| `coordinator.py` | **SHA-256 zgodny** |
+| `sensor.py` | **SHA-256 zgodny** |
+| `manifest.json` | **SHA-256 zgodny** |
+
+Wniosek: zawartość wszystkich czterech plików jest identyczna bajt po bajcie z ETAPEM 8. Nie dowodzi to jeszcze zgodności **całego** katalogu integracji (commit zawiera 15 plików), dlatego HA9-01 i 9.5.2 nadal są otwarte. Przed wdrożeniem należy porównać pozostałe pliki i wykryć nieoczekiwane nadmiarowe pliki, ignorując jedynie artefakty `__pycache__`.
+
+Nie wprowadzono zmian ani nie restartowano HA, nie zlecając jeszcze aktualizacji.
+
 ## D. Scenariusze na rzeczywistym HA — do wykonania po zgodzie
 
 | Kod | Kroki | Kryterium zaliczenia | Status |
