@@ -94,6 +94,18 @@ Szczegóły w [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 
 Odczyt wykonany 12 listopada 2026 r. wskazał **2** certyfikaty PEM wysłane przez broker przy `-showcerts`. Jest to zgodne z hipotezą certyfikatu końcowego i certyfikatu wystawcy, ale wymaga potwierdzenia metadanych `subject`, `issuer` i `basicConstraints` drugiego certyfikatu. Sama liczba nie świadczy o zaufaniu do CA ani nie naprawia niedopasowania IP. Odczyt publicznych pól zaplanowano jako kolejny test read-only, opisany w [procedurze TLS](ETAP_9_2_TLS_DIAGNOSTYKA.md). 9.2.5 jest nadal otwarte (P1).
 
+## Uzupełnienie 12 listopada 2026 — identyfikacja samopodpisanego CA
+
+Odczyt drugiego certyfikatu przesłanego przez broker (publiczne dane X.509) wykazał:
+`Subject=Issuer: CN=An MQTT broker, O=OwnTracks.org, OU=generate-CA`,
+`Basic Constraints: critical, CA:TRUE`, okres ważności 12 maja 2020 — 9 maja 2032.
+
+Połączone z błędem OpenSSL `depth=1, num=19` potwierdza to samopodpisany certyfikat Root CA. Wzorzec Subject/Issuer występuje w publicznym generatorze OwnTracks `generate-CA.sh` (https://github.com/owntracks/tools/blob/master/TLS/generate-CA.sh). **Nie jest to niezależne potwierdzenie autentyczności CA ani producenta sterownika.**
+
+**Decyzja bezpieczeństwa:** nie włączamy weryfikacji opartej na automatycznie pobranym i niezaufanym certyfikacie; nie zmieniamy adresu pompy. Do bezpiecznej implementacji potrzebujemy zweryfikowanego punktu zaufania oraz rozwiązania niezgodności `ee-agent` versus aktualny IP. Zadanie 9.2.5 pozostaje otwarte/P1. Pozostałe etapy niewymagające sprzętu mogą być realizowane równolegle.
+
+Szczegóły: [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
+
 ## Co dalej
 
 - Rozstrzygnąć 9.2.5: model certyfikatu TLS, bezpieczne warianty konfiguracji i kompatybilność.
