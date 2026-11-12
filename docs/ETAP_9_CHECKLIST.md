@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (6/9).
+Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9).
 
 ## Zasady
 
@@ -18,15 +18,16 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - Raport zmian i otwartego ryzyka TLS: [ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md).
 - Audyt zgodności i CI Python 3.14: [ETAP_9_3_KOMPATYBILNOSC.md](ETAP_9_3_KOMPATYBILNOSC.md).
 - Preflight HACS / Marketplace i procedura aktualizacji: [ETAP_9_3_MARKETPLACE.md](ETAP_9_3_MARKETPLACE.md).
+- Rzeczywiste klasy HA 2026.11 i test rejestru 73 encji: [ETAP_9_3_TESTY_HA_CORE.md](ETAP_9_3_TESTY_HA_CORE.md).
 - Diagnostyka certyfikatu i plan rozwiązań: [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 - Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
 - PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
 
 ## Postęp
 
-- Ukończono: **20/69** zadań (29.0%).
+- Ukończono: **22/69** zadań (31.9%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS (P1) i końcowa regresja; **9.3 (6/9)** — domknięto schematy pomiarów energii, nadal otwarte natywne API HA Core, test rzeczywistego środowiska 2026.11 i aktualizacja Marketplace.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS (P1) i końcowa regresja; **9.3 (8/9)** — wykonano test klas i pełnego setup/unload na HA Core 2026.11 (MQTT symulowany); pozostaje instalacja/aktualizacja Marketplace oraz minimum HA w 9.3.9. Test fizyczny HA w 9.5.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -50,16 +51,16 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
 - [ ] **9.2.8** Każdą potrzebną poprawkę opatrzyć testem regresyjnym.
 
-## 9.3 — Kompatybilność urządzeń i Home Assistant (6/9)
+## 9.3 — Kompatybilność urządzeń i Home Assistant (8/9)
 
 - [x] **9.3.1** Sprawdzić rozpoznawanie FriskoGEO, FriskoATMO i FriskoALLINONE.
 - [x] **9.3.2** Zweryfikować wybór pompy niezależnie od kolejności Devices oraz bezpieczeństwo przy wielu pompach.
 - [x] **9.3.3** Sprawdzić istniejące i nowe unique_id, entity_id i identyfikatory urządzeń.
-- [ ] **9.3.4** Sprawdzić natywne API SensorEntity, NumberEntity, SelectEntity i pozostałych encji. **Migrację SensorEntity do native_value wykonano; potrzebna jeszcze kontrola API w prawdziwym HA 2026.11.**
+- [x] **9.3.4** Sprawdzić natywne API SensorEntity, NumberEntity, SelectEntity i pozostałych encji. **Przeprowadzono testy na rzeczywistych klasach HA Core 2026.11.0 oraz test rejestracji; MQTT bez fizycznej pompy.**
 - [x] **9.3.5** Zweryfikować device_class, state_class, jednostki pomiarowe i zgodność z panelem Energia. **Zakończono audyt metadanych i poprawiono szacowanie energii ZM_AC_IN_ENERGY z bezpiecznym RestoreSensor oraz testami; deklaracje HA Energy są zgodne. Uwaga: widok panelu Energia i ciągłość historii na prawdziwym HA pozostają do weryfikacji w ETAPIE 9.5.**
 - [x] **9.3.6** Sprawdzić zachowanie METER_1 i dodatkowych METER_N, bez fikcyjnych liczników.
 - [x] **9.3.7** Sprawdzić odtwarzanie liczników dziennych, północ, zmianę dnia i przerwy w danych.
-- [ ] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11. **Python 3.14.10: 125/125 zielonych testów; końcowe sprawdzenie nowej gałęzi w HA Core 2026.11 jeszcze do wykonania.**
+- [x] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11. **137/137 testów na Pythonie 3.12/3.13/3.14 oraz 5 testów rzeczywistego API + 1 test setup/unload na Core 2026.11.0/Python 3.14.10; dwa urządzenia i 73 encje zarejestrowane, test fizycznego HA pozostaje w 9.5.**
 - [ ] **9.3.9** Zweryfikować manifest, metadane HACS, instalację oraz ścieżkę aktualizacji bez utraty encji. **Preflight ZIP zakończony: utworzono generator, 3 testy pakowania, a CI 137/137 ×3 poprawnie buduje płaski euros_os.zip (15 plików). Nadal otwarte: rzeczywista aktualizacja w Marketplace i zgodność minimum HA (hacs.json 2021.12 vs README 2023.3) oraz decyzja autora o wersji wydania.**
 
 ## 9.4 — Rozszerzenie testów automatycznych (0/8)
@@ -138,6 +139,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.3.1–9.3.3, 9.3.6–9.3.7 | Rozpoznawanie pomp, porządek MQTT, stałość identyfikatorów, METER_N i restart/dobowe liczniki zaliczone w symulacjach. Python 3.14.10 CI zielony, natywne sensory poprawione, 4 punkty 9.3 nadal otwarte | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 125/125 x3](https://github.com/BudrysLP/EurosOS/actions/runs/43201747083) |
 | 2026-11-12 | 9.3.5 | Poprawiono szacowanie energii pompy: bez efektów ubocznych odczytu, RestoreSensor, obsługa luk MQTT i trwały unique_id. Skorygowano klasy RPM i PWM%. Potwierdzono metadane zgodne ze schematem Energy; test w rzeczywistym HA przeniesiony do 9.5. | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 134/134 ×3](https://github.com/BudrysLP/EurosOS/actions/runs/43204946143) |
 | 2026-11-12 | 9.3.9 — preflight pakowania | Zbudowano i zweryfikowano w CI ZIP z 15 plikami integracji oraz kompletność metadanych; wykryto rozbieżność minimalnej HA i wersji wydania. Rzeczywista instalacja Marketplace nie została wykonana; zadanie nadal otwarte | [Raport](ETAP_9_3_MARKETPLACE.md), [CI 137/137 ×3 + ZIP](https://github.com/BudrysLP/EurosOS/actions/runs/43209612693) |
+| 2026-11-12 | 9.3.4 i 9.3.8 | 5 testów prawdziwych klas Home Assistant 2026.11 + 1 test setup/unload Core z atrapą MQTT: 2 urządzenia, 73 encje, 73 unikalne klucze rejestru, poprawne id i odczyty. Brak zmian w produkcyjnym HA | [Raport](ETAP_9_3_TESTY_HA_CORE.md), [CI 137×3 + 6 testów HA](https://github.com/BudrysLP/EurosOS/actions/runs/43212325942) |
 
 ## Kolejny ruch
 
