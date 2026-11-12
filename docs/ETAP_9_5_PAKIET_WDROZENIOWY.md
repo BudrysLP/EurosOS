@@ -148,10 +148,22 @@ PASS: Registry identity unchanged
 Porównanie potwierdza, że identyfikatory i relacje urządzeń pozostają niezmienione. **Nie dowodzi jeszcze dostępności i aktualności wartości MQTT, działania sterowania ani ciągłości statystyk energii.** Oba prywatne pliki JSON pozostają w HA, bez przekazywania do repozytorium.
 
 
+## 4.4. Funkcjonalne odczyty GEO_1 i EMS Dom po restarcie — PASS
+
+Użytkownik przesłał zrzuty integracji Home Assistant po aktualizacji. Na ekranie integracji wyświetlają się **2 urządzenia i 73 encje**, w tym `GEO_1` (38 encji, firmware `870.12`) oraz `EMS – Dom` (`METER_1`, 35 encji). Widoczne sensory nie mają statusów `unavailable`. Kolejne zdjęcia pokazują niewielkie zmiany wartości, co wspiera wniosek o bieżącej telemetrii.
+
+**GEO_1:** tryb `EMS`, stan `CWU`, sprężarka i pompy (CO, źródła) działają według wskazań, CWU zadana 50,0°C i aktualna 46,1°C, temperatura wewnętrzna 21,9°C, zewnętrzna 3,0°C. Górne źródło zasilanie 53,5°C, powrót około 50,0–50,2°C, dolne źródło 7,1°C i 2,2°C, delta 4,9°C. Nie wysyłano nowych poleceń do urządzenia.
+
+**EMS Dom:** chwilowy bilans około 3,24 kW, L1 0,85 kW, L2 około 1,47–1,48 kW, L3 0,92 kW (suma zgodna w granicach zaokrągleń); dzienny import 10,15 kWh i eksport 0,17 kWh, sieć 50 Hz, napięcia fazowe 231–233 V. Odczyty prądów i współczynników zmieniają się pomiędzy ujęciami.
+
+**Obserwacja do weryfikacji, nie powód do natychmiastowego rollbacku:** pomocnicze techniczne sensory EMS pokazują na L2 około -0,13 do -0,15 kW i techniczny `Współczynnik TOTAL` = -1.0. Znaczenie pól i konwencję znaków należy porównać z oryginalnym payloadem/definicjami przed uznaniem tego za usterkę; nie edytować współczynników ani konfiguracji.
+
+**Wniosek:** 9.5.3 zaliczono jako test powdrożeniowej rejestracji i odczytów GEO/EMS razem z wynikiem `PASS: Registry identity unchanged`. Nie weryfikowano ciągłości historii Recorder/Panelu Energia (9.5.4), pełnego odpornościowego cyklu MQTT (9.5.5) ani logów HA Core (9.5.6). Zrzuty nie stanowią niezależnego testu wszystkich 73 wartości.
+
 **Kolejne kroki bez ingerencji w działanie pompy:**
 1. **WYKONANE:** prywatny `after.json`, 73 encje i 2 urządzenia.
 2. **WYKONANE:** porównanie `before`/`after`, 0 różnic, wynik PASS.
-3. **OTWARTE:** panel Euros OS, dostępność oraz rzeczywiste odczyty GEO_1 i EMS Dom, ciągłość historii energii.
+3. **GEO/EMS ZALICZONE:** odczyty po restarcie i 73/2 wpisy rejestrów zachowane; **OTWARTE:** ciągłość historii energii (9.5.4).
 4. **OTWARTE:** logi Core; nie wykonywać dodatkowego restartu bez osobnej decyzji operatora.
 
 
@@ -169,4 +181,4 @@ Po osobnym zatwierdzeniu faktycznej wymiany (NIE w tym kroku):
 
 ## 6. Stan checklisty
 
-ETAP 9: **33/69 zadań**. 9.5.1, 9.5.2 i 9.5.7 zakończone. Na podstawie raportu operatora podmieniono 15 plików, wykonano jeden restart, a porównanie rejestrów 73/2 zakończyło się PASS. Zadania 9.5.3–9.5.6 oraz 9.5.8 pozostają otwarte do kontroli odczytów, historii, logów i końcowej oceny.
+ETAP 9: **34/69 zadań**. 9.5.1, 9.5.2, 9.5.3 i 9.5.7 zakończone. Na podstawie raportu operatora podmieniono 15 plików, wykonano jeden restart, porównanie rejestrów 73/2 dało PASS, a widoczne odczyty GEO/EMS są aktywne i spójne. Otwarta jest historia energii (9.5.4), bezpieczeństwo obsługi stale/reconnect w żywym środowisku (9.5.5), logi (9.5.6) i decyzja końcowa (9.5.8).
