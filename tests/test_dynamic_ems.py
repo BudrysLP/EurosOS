@@ -70,6 +70,9 @@ class FakeRestoreSensor:
     async def async_get_last_state(self):
         return getattr(self, "_restored_state", None)
 
+    async def async_get_last_sensor_data(self):
+        return getattr(self, "_restored_sensor_data", None)
+
     def async_on_remove(self, cleanup):
         self._test_cleanup = cleanup
 
@@ -482,6 +485,95 @@ class DynamicEmsPlatformTests(unittest.TestCase):
         self.assertIsNone(temperature.native_value)
         self.coordinator.device = {"Data": {"TSM16": 22.4}}
         self.assertEqual(temperature.native_value, 22.4)
+
+
+    def _legacy_estimated_energy(self, restored=None):
+        import time
+        sensor = self.sensor.EurosOSLegacyEstimatedEnergySensor(
+            self.coordinator, "ZM_AC_IN_ENERGY",
+            ("Energy estimate", "kWh", "mdi:counter", "energy"),
+            "abcdef", {}, device_type="FriskoATMO",
+        )
+        sensor.hass = types.SimpleNamespace(
+            loop=types.SimpleNamespace(
+                is_closed=lambda: False,
+                call_soon_threadsafe=lambda fn: fn(),
+            )
+        )
+        sensor._restored_sensor_data = restored
+        self.coordinator._last_update = time.time()
+        self.coordinator.device = {
+            "Data": {"ZM_AC_IN_CUR": "2", "ZM_AC_IN_VOL": "230"}
+        }
+        asyncio.run(sensor.async_added_to_hass())
+        return sensor
+
+    def test_legacy_energy_is_stable_across_reads_and_meter_only_events(self):
+        sensor = self._legacy_estimated_energy()
+        baseline = self.coordinator._last_update
+        self.assertEqual(sensor.native_value, 0.0)
+        self.assertEqual(sensor._attr_unique_id, "abcdef_zm_ac_in_energy")
+        self.assertEqual(sensor._attr_native_unit_of_measurement, "kWh")
+        self.assertEqual(sensor._attr_device_class, "energy")
+        self.assertEqual(sensor._attr_state_class, "total_increasing")
+        for _ in range(5):
+            self.assertEqual(sensor.native_value, 0.0)
+            sensor._handle_coordinator_update()  # meter-only or staleness
+        self.assertEqual(sensor.native_value, 0.0)
+        self.coordinator._last_update = baseline + 30
+        self.coordinator.device["Data"]["ZM_AC_IN_CUR"] = "4"
+        sensor._handle_coordinator_update()
+        # 460 -> 920 W trapezoid, 30 seconds = 0.00575 kWh.
+        self.assertEqual(sensor.native_value, 0.0057)  # Python round(0.00575, 4)
+        self.assertEqual(sensor.native_value, sensor.native_value)
+
+    def test_legacy_energy_restores_native_value_without_offline_gap(self):
+        restored = types.SimpleNamespace(native_value=12.3456)
+        sensor = self._legacy_estimated_energy(restored=restored)
+        first = self.coordinator._last_update
+        self.assertEqual(sensor.native_value, 12.3456)
+        self.coordinator._last_update = first + 30
+        sensor._handle_coordinator_update()
+        # 460 W for 30 seconds = 0.003833... kWh.
+        self.assertEqual(sensor.native_value, round(12.3456 + 460 * 30 / 3_600_000, 4))
+        self.assertEqual(sensor._attr_unique_id, "abcdef_zm_ac_in_energy")
+
+    def test_legacy_energy_does_not_invent_power_during_outage(self):
+        sensor = self._legacy_estimated_energy()
+        first = self.coordinator._last_update
+        self.coordinator._last_update = first + 240  # greater than MQTT_TIMEOUT
+        sensor._handle_coordinator_update()
+        self.assertEqual(sensor.native_value, 0.0)
+        self.coordinator._last_update += 30
+        sensor._handle_coordinator_update()
+        self.assertEqual(sensor.native_value, round(460 * 30 / 3_600_000, 4))
+
+    def test_legacy_energy_invalid_samples_break_integration_interval(self):
+        sensor = self._legacy_estimated_energy()
+        baseline = self.coordinator._last_update
+        for timestamp, reading in (
+            (baseline + 10, "NaN"), (baseline + 20, None),
+            (baseline + 30, "-1"), (baseline + 40, "2"),
+        ):
+            self.coordinator._last_update = timestamp
+            self.coordinator.device["Data"]["ZM_AC_IN_CUR"] = reading
+            sensor._handle_coordinator_update()
+        self.assertEqual(sensor.native_value, 0.0)
+        self.coordinator._last_update += 10
+        sensor._handle_coordinator_update()
+        self.assertEqual(sensor.native_value, round(460 * 10 / 3_600_000, 4))
+        asyncio.run(sensor.async_will_remove_from_hass())
+        self.coordinator._last_update += 10
+        sensor._handle_coordinator_update()
+        self.assertEqual(sensor.native_value, round(460 * 10 / 3_600_000, 4))
+
+    def test_legacy_energy_rejects_invalid_restored_values(self):
+        for invalid in ("NaN", -4, "bad", float("inf")):
+            with self.subTest(invalid=invalid):
+                sensor = self._legacy_estimated_energy(
+                    restored=types.SimpleNamespace(native_value=invalid)
+                )
+                self.assertEqual(sensor.native_value, 0.0)
 
 
 if __name__ == "__main__":
