@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (5/9).
+Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (6/9).
 
 ## Zasady
 
@@ -23,9 +23,9 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 
 ## Postęp
 
-- Ukończono: **19/69** zadań (27.5%).
+- Ukończono: **20/69** zadań (29.0%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS (P1) i regresja końcowa; **9.3 (5/9)** — otwarte natywne API HA Core, energia, pełne środowisko 2026.11 i aktualizacja Marketplace.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS (P1) i końcowa regresja; **9.3 (6/9)** — domknięto schematy pomiarów energii, nadal otwarte natywne API HA Core, test rzeczywistego środowiska 2026.11 i aktualizacja Marketplace.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -49,13 +49,13 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
 - [ ] **9.2.8** Każdą potrzebną poprawkę opatrzyć testem regresyjnym.
 
-## 9.3 — Kompatybilność urządzeń i Home Assistant (5/9)
+## 9.3 — Kompatybilność urządzeń i Home Assistant (6/9)
 
 - [x] **9.3.1** Sprawdzić rozpoznawanie FriskoGEO, FriskoATMO i FriskoALLINONE.
 - [x] **9.3.2** Zweryfikować wybór pompy niezależnie od kolejności Devices oraz bezpieczeństwo przy wielu pompach.
 - [x] **9.3.3** Sprawdzić istniejące i nowe unique_id, entity_id i identyfikatory urządzeń.
 - [ ] **9.3.4** Sprawdzić natywne API SensorEntity, NumberEntity, SelectEntity i pozostałych encji. **Migrację SensorEntity do native_value wykonano; potrzebna jeszcze kontrola API w prawdziwym HA 2026.11.**
-- [ ] **9.3.5** Zweryfikować device_class, state_class, jednostki pomiarowe i zgodność z panelem Energia. **Pozostał audyt starszego szacowanego ZM_AC_IN_ENERGY i zgodności ze statystykami HA.**
+- [x] **9.3.5** Zweryfikować device_class, state_class, jednostki pomiarowe i zgodność z panelem Energia. **Zakończono audyt metadanych i poprawiono szacowanie energii ZM_AC_IN_ENERGY z bezpiecznym RestoreSensor oraz testami; deklaracje HA Energy są zgodne. Uwaga: widok panelu Energia i ciągłość historii na prawdziwym HA pozostają do weryfikacji w ETAPIE 9.5.**
 - [x] **9.3.6** Sprawdzić zachowanie METER_1 i dodatkowych METER_N, bez fikcyjnych liczników.
 - [x] **9.3.7** Sprawdzić odtwarzanie liczników dziennych, północ, zmianę dnia i przerwy w danych.
 - [ ] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11. **Python 3.14.10: 125/125 zielonych testów; końcowe sprawdzenie nowej gałęzi w HA Core 2026.11 jeszcze do wykonania.**
@@ -135,6 +135,7 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.2.5 — liczba certyfikatów | Broker przesyła 2 certyfikaty PEM; zaplanowano odczyt publicznych danych drugiego oraz niezależne potwierdzenie CA. Zadanie pozostaje otwarte | [Procedura TLS](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 | 2026-11-12 | 9.2.5 — weryfikacja drugiego certyfikatu | Subject=Issuer, `CA:TRUE`, nazwy zgodne z publicznym generatorem OwnTracks; to przesłanka metody wygenerowania, nie niezależne uwierzytelnienie CA. 9.2.5 pozostaje P1 | [Analiza](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 | 2026-11-12 | 9.3.1–9.3.3, 9.3.6–9.3.7 | Rozpoznawanie pomp, porządek MQTT, stałość identyfikatorów, METER_N i restart/dobowe liczniki zaliczone w symulacjach. Python 3.14.10 CI zielony, natywne sensory poprawione, 4 punkty 9.3 nadal otwarte | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 125/125 x3](https://github.com/BudrysLP/EurosOS/actions/runs/43201747083) |
+| 2026-11-12 | 9.3.5 | Poprawiono szacowanie energii pompy: bez efektów ubocznych odczytu, RestoreSensor, obsługa luk MQTT i trwały unique_id. Skorygowano klasy RPM i PWM%. Potwierdzono metadane zgodne ze schematem Energy; test w rzeczywistym HA przeniesiony do 9.5. | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 134/134 ×3](https://github.com/BudrysLP/EurosOS/actions/runs/43204946143) |
 
 ## Kolejny ruch
 
