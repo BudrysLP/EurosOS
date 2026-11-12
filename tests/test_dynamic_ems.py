@@ -286,15 +286,15 @@ class DynamicEmsPlatformTests(unittest.TestCase):
             ("Temperature", "°C", "mdi:thermometer", "temperature"),
             "abcdef", self.state["device_info"], device_type="FriskoGEO",
         )
-        self.assertEqual(sensor.state, "unknown")
+        self.assertIsNone(sensor.native_value)
         for raw in ("NaN", "inf", "broken", None):
             with self.subTest(raw=raw):
                 self.coordinator.device["Data"] = {"TSM16": raw}
-                self.assertEqual(sensor.state, "unknown")
+                self.assertIsNone(sensor.native_value)
         self.coordinator.device["Data"] = {"TSM16": "0"}
-        self.assertEqual(sensor.state, 0.0)
+        self.assertEqual(sensor.native_value, 0.0)
         self.coordinator.device["Data"] = {"TSM16": "24.26"}
-        self.assertEqual(sensor.state, 24.3)
+        self.assertEqual(sensor.native_value, 24.3)
 
     def test_malformed_meter_reading_becomes_unavailable_not_zero(self):
         self.setup_platform()
@@ -422,12 +422,12 @@ class DynamicEmsPlatformTests(unittest.TestCase):
             "abcdef", {}, device_type="FriskoGEO",
         )
         self.assertTrue(pump.available)
-        self.assertEqual(pump.state, 23.5)
+        self.assertEqual(pump.native_value, 23.5)
         self.coordinator._last_update -= 61
         self.assertFalse(pump.available)
         # The last valid numeric reading is still in the snapshot;
         # Home Assistant writes unavailable because available is False.
-        self.assertEqual(pump.state, 23.5)
+        self.assertEqual(pump.native_value, 23.5)
         self.assertEqual(pump._attr_unique_id, "abcdef_tsm16")
 
     def test_missing_first_pump_snapshot_is_unavailable(self):
@@ -437,7 +437,7 @@ class DynamicEmsPlatformTests(unittest.TestCase):
             "abcdef", {}, device_type="FriskoGEO",
         )
         self.assertFalse(pump.available)
-        self.assertIsNone(pump.state)
+        self.assertIsNone(pump.native_value)
 
 
 if __name__ == "__main__":
