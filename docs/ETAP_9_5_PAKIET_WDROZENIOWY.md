@@ -128,11 +128,31 @@ HA CORE: NOT RESTARTED
 
 Po poprawnej podmianie katalogu operator otrzymał polecenie `ha core check && ha core restart` i odpowiedział **„Zrobione”**. Przyjmujemy, że wykonał polecenie, ale nie dysponujemy osobnym wynikiem `ha core check` ani odczytem statusu po ponownym uruchomieniu. **Nie oznacza to jeszcze zaliczenia testów funkcjonalnych.**
 
+**Wynik rejestrów po restarcie (12.11.2026): zaliczony.** Operator uruchomił prywatny skrypt `ha_registry_snapshot.py capture` zapisując `after.json`, a następnie `compare` z historycznym `before.json`. Udokumentowano:
+
+```text
+before_entities=73
+after_entities=73
+missing_entities=0
+new_entities=0
+changed_entity_ids=0
+changed_device_links=0
+before_devices=2
+after_devices=2
+missing_devices=0
+new_devices=0
+changed_parent_links=0
+PASS: Registry identity unchanged
+```
+
+Porównanie potwierdza, że identyfikatory i relacje urządzeń pozostają niezmienione. **Nie dowodzi jeszcze dostępności i aktualności wartości MQTT, działania sterowania ani ciągłości statystyk energii.** Oba prywatne pliki JSON pozostają w HA, bez przekazywania do repozytorium.
+
+
 **Kolejne kroki bez ingerencji w działanie pompy:**
-1. Zarejestrować osobny prywatny `after.json` aktualnego rejestru (wymagane 73 encje, 2 urządzenia).
-2. Porównać `after.json` z `before.json` skryptem `ha_registry_snapshot.py compare` (oczekiwane 0 różnic w identyfikatorach).
-3. Sprawdzić na panelu integrację Euros OS, odczyty GEO_1 i EMS Dom oraz ciągłość historii energii.
-4. Skontrolować logi Core i nie wykonywać dodatkowego restartu bez osobnej decyzji operatora.
+1. **WYKONANE:** prywatny `after.json`, 73 encje i 2 urządzenia.
+2. **WYKONANE:** porównanie `before`/`after`, 0 różnic, wynik PASS.
+3. **OTWARTE:** panel Euros OS, dostępność oraz rzeczywiste odczyty GEO_1 i EMS Dom, ciągłość historii energii.
+4. **OTWARTE:** logi Core; nie wykonywać dodatkowego restartu bez osobnej decyzji operatora.
 
 
 
@@ -149,4 +169,4 @@ Po osobnym zatwierdzeniu faktycznej wymiany (NIE w tym kroku):
 
 ## 6. Stan checklisty
 
-ETAP 9: **32/69 zadań**. 9.5.1 i 9.5.7 zakończone. Zakres 9.5.2 zaakceptowany, ale samo zadanie pozostaje otwarte do przygotowania kandydata i ustalenia okna serwisowego; 9.5.3–9.5.6 oraz 9.5.8 wymagają testów na działającym HA.
+ETAP 9: **33/69 zadań**. 9.5.1, 9.5.2 i 9.5.7 zakończone. Na podstawie raportu operatora podmieniono 15 plików, wykonano jeden restart, a porównanie rejestrów 73/2 zakończyło się PASS. Zadania 9.5.3–9.5.6 oraz 9.5.8 pozostają otwarte do kontroli odczytów, historii, logów i końcowej oceny.
