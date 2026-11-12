@@ -28,6 +28,24 @@ class Ha08CompatibilityTests(unittest.TestCase):
         self.assertIn("self._attr_unique_id = f", source)
         self.assertIn("async def async_set_native_value(self, value):", source)
 
+    def test_legacy_pump_sensor_uses_current_native_ha_api_without_id_change(self):
+        source, tree = source_tree("sensor.py")
+        legacy = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "EurosOSSensor"
+        )
+        names = {
+            node.name for node in legacy.body if isinstance(node, ast.FunctionDef)
+        }
+        self.assertIn("native_value", names)
+        self.assertIn("available", names)
+        self.assertNotIn("state", names)
+        self.assertNotIn("unit_of_measurement", names)
+        self.assertNotIn("state_class", names)
+        self.assertIn("self._attr_native_unit_of_measurement = info[1]", source)
+        self.assertIn("self._attr_state_class = (", source)
+        self.assertIn('self._attr_unique_id = f"{unique_prefix}_{key.lower()}"', source)
+
     def test_geo_ems_device_links_to_existing_parent_by_registry_id(self):
         source, tree = source_tree("sensor.py")
         self.assertIsInstance(tree, ast.Module)
