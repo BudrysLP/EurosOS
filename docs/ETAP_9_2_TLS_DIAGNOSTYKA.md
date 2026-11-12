@@ -46,9 +46,19 @@ Wyniki pochodzą z terminala Home Assistant i zostały odczytane z publicznego c
 
 1. **Test A — wynik: NEGATYWNY.** `openssl x509 -checkip` zwrócił `IP 192.168.1.17 does NOT match certificate`. Fingerprint SHA-256 został odczytany i przekazany w rozmowie; nie publikujemy tutaj unikatowego odcisku sprzętu użytkownika.
 2. **Test B — wynik: NEGATYWNY.** `openssl s_client -verify_return_error -verify_ip` zwrócił `depth=1` i `verify error:num=19:self-signed certificate in certificate chain`, po czym handshake przerwano. To wskazuje na niezaufany certyfikat na poziomie wystawcy w łańcuchu; **nie** dowodzi, że sam certyfikat serwera jest samopodpisany. Ponieważ test zakończył się na błędzie zaufania, nie rozstrzyga niezależnie kolejnego sprawdzenia IP (to wykonał test A).
-3. **Test C — opcjonalny, jeszcze niewykonany.** Pozostaje do sprawdzenia, ile certyfikatów przesyła broker w ramach łańcucha i czy certyfikat CA może być niezależnie potwierdzony u producenta.
+3. **Test C — wykonany: wynik `2`.** Broker przesłał dokładnie dwa bloki PEM `BEGIN CERTIFICATE`. Typowy układ to certyfikat brokera i certyfikat wystawcy, jednak sama liczba **nie dowodzi**, że drugi certyfikat jest prawidłowym CA ani że należy mu ufać. Niezależne potwierdzenie wystawcy przez producenta nadal nie zostało przeprowadzone.
 4. **Wniosek:** standardowa ścieżka z zaufanym CA i dopasowaniem aktualnego IP nie przejdzie w obecnym stanie. Dwa osobne problemy: brak zaufania do lokalnego/root CA oraz niezgodność SAN z aktualnym adresem IP pompy. Nadal nie mamy niezależnie uwierzytelnionej CA ani modelu odnowy certyfikatu.
 5. **Decyzja:** nie przełączać działającego Home Assistant na ścisły TLS, nie podmieniać adresu IP, nie wyłączać zabezpieczeń w systemie operacyjnym i nie implementować pinningu na podstawie jednorazowego odczytu z niezaufanego połączenia. Zadanie 9.2.5 pozostaje **P1 / otwarte**.
+
+## Następny test read-only — rola drugiego certyfikatu
+
+Poniższe polecenie wyświetla **jedynie publiczne metadane drugiego certyfikatu PEM** z odpowiedzi TLS, bez zapisywania pliku i bez wysyłania poleceń MQTT. Odczyt `CA:TRUE` sugeruje certyfikat urzędu certyfikacji, ale nie jest dowodem wiarygodności tego urzędu.
+
+```sh
+openssl s_client -connect 192.168.1.17:8883 -showcerts </dev/null 2>/dev/null | awk '/-----BEGIN CERTIFICATE-----/ {n++} n==2 {print} /-----END CERTIFICATE-----/ && n==2 {exit}' | openssl x509 -noout -subject -issuer -dates -ext basicConstraints
+```
+
+Nie instalować automatycznie tego certyfikatu w systemowym trust store. Potwierdzenie źródła CA i zgodności nazwy serwera należy traktować niezależnie.
 
 ## Decyzje projektowe — bez dokonywania zmian w pompie
 
@@ -63,7 +73,8 @@ Wyniki pochodzą z terminala Home Assistant i zostały odczytane z publicznego c
 - [x] Ustalono, że certyfikat ma SAN niepasujący do bieżącego IP i jest czasowo ważny.
 - [x] Potwierdzono w kodzie i dokumentacji Paho, że połączenie nie weryfikuje zaufania.
 - [x] Zebrano wynik `checkip` (A) i diagnozę łańcucha (B), oba negatywne.
-- [ ] Opcjonalny odczyt liczby certyfikatów (C) i niezależna weryfikacja wystawcy.
+- [x] Odczytano liczbę certyfikatów przesłanych przez broker (C): **2**.
+- [ ] Zweryfikowano rolę drugiego certyfikatu i niezależnie potwierdzono wystawcę (CA) u producenta.
 - [ ] Udokumentowano ostateczne ograniczenia i wybrany model wdrożenia, kompatybilny z realnym urządzeniem i innymi modelami Euros OS.
 - [ ] Zweryfikowano docelową implementację i regresję albo formalnie uznano nierozwiązany problem za **blokadę wydania**.
 
