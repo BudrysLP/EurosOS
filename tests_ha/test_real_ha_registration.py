@@ -92,11 +92,11 @@ async def test_real_ha_2026_11_registers_geo_and_ems_without_mqtt(
         }) == 73
         assert len({entity.unique_id for entity in owned_entities}) == 69
 
-        pump = device_registry.async_get_device(
-            identifiers={(DOMAIN, "stage9-real-api")}
+        pump = device_registry.async_get_device_by_identifier(
+            (DOMAIN, "stage9-real-api"), entry.entry_id
         )
-        meter = device_registry.async_get_device(
-            identifiers={(DOMAIN, "stage9-real-api_ems_meter_1")}
+        meter = device_registry.async_get_device_by_identifier(
+            (DOMAIN, "stage9-real-api_ems_meter_1"), entry.entry_id
         )
         assert pump is not None
         assert meter is not None
