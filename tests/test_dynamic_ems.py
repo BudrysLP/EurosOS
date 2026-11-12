@@ -439,6 +439,50 @@ class DynamicEmsPlatformTests(unittest.TestCase):
         self.assertFalse(pump.available)
         self.assertIsNone(pump.native_value)
 
+    def test_numeric_sensor_values_are_finite_for_ha_state_classes(self):
+        cases = (("0", 0.0), ("16.75", 16.75), ("NaN", None),
+                 ("inf", None), (None, None), ("not numeric", None), (True, None))
+        for raw, expected in cases:
+            with self.subTest(raw=raw):
+                pump = self.sensor.EurosOSSensor(
+                    self.coordinator, "SAMPLE",
+                    ("Numeric", None, "mdi:gauge", None),
+                    "abcdef", {}, device_type="FriskoATMO",
+                )
+                self.coordinator.device = {"Data": {"SAMPLE": raw}}
+                self.assertEqual(pump.native_value, expected)
+                self.assertEqual(pump._attr_state_class, "measurement")
+                self.assertEqual(pump._attr_unique_id, "abcdef_sample")
+
+    def test_incomplete_legacy_power_readings_are_unknown_not_zero(self):
+        power = self.sensor.EurosOSSensor(
+            self.coordinator, "ZM_AC_IN_PWR",
+            ("Power", "W", "mdi:flash", "power"),
+            "abcdef", {}, device_type="FriskoATMO",
+        )
+        for sample in ({"ZM_AC_IN_CUR": "2"}, {"ZM_AC_IN_VOL": "230"},
+                       {"ZM_AC_IN_CUR": "NaN", "ZM_AC_IN_VOL": "230"}):
+            with self.subTest(sample=sample):
+                self.coordinator.device = {"Data": sample}
+                self.assertIsNone(power.native_value)
+        self.coordinator.device = {"Data": {
+            "ZM_AC_IN_CUR": "2", "ZM_AC_IN_VOL": "230"
+        }}
+        self.assertEqual(power.native_value, 460.0)
+        self.assertEqual(power._attr_native_unit_of_measurement, "W")
+        self.assertEqual(power._attr_unique_id, "abcdef_zm_ac_in_pwr")
+
+    def test_temperature_does_not_accept_nan_in_native_value(self):
+        temperature = self.sensor.EurosOSSensor(
+            self.coordinator, "TSM16",
+            ("Temperature", "°C", "mdi:thermometer", "temperature"),
+            "abcdef", {}, device_type="FriskoGEO",
+        )
+        self.coordinator.device = {"Data": {"TSM16": "NaN"}}
+        self.assertIsNone(temperature.native_value)
+        self.coordinator.device = {"Data": {"TSM16": 22.4}}
+        self.assertEqual(temperature.native_value, 22.4)
+
 
 if __name__ == "__main__":
     unittest.main()
