@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9).
+Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8).
 
 ## Zasady
 
@@ -19,15 +19,16 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - Audyt zgodności i CI Python 3.14: [ETAP_9_3_KOMPATYBILNOSC.md](ETAP_9_3_KOMPATYBILNOSC.md).
 - Preflight HACS / Marketplace i procedura aktualizacji: [ETAP_9_3_MARKETPLACE.md](ETAP_9_3_MARKETPLACE.md).
 - Rzeczywiste klasy HA 2026.11 i test rejestru 73 encji: [ETAP_9_3_TESTY_HA_CORE.md](ETAP_9_3_TESTY_HA_CORE.md).
+- Rozbudowa testów 9.4, macierz CI i 0 pominięć: [ETAP_9_4_TESTY_AUTOMATYCZNE.md](ETAP_9_4_TESTY_AUTOMATYCZNE.md).
 - Diagnostyka certyfikatu i plan rozwiązań: [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 - Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
 - PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
 
 ## Postęp
 
-- Ukończono: **22/69** zadań (31.9%).
+- Ukończono: **30/69** zadań (43.5%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS (P1) i końcowa regresja; **9.3 (8/9)** — wykonano test klas i pełnego setup/unload na HA Core 2026.11 (MQTT symulowany); pozostaje instalacja/aktualizacja Marketplace oraz minimum HA w 9.3.9. Test fizyczny HA w 9.5.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS P1 i późniejsza regresja; **9.3 (8/9)** — do weryfikacji aktualizacja przez Marketplace (9.3.9); **9.4 (8/8)** — testy automatyczne zakończone (154/154 ×3 + 6/6 rzeczywiste API HA). Fizyczne HA i dane produkcyjne pozostają w 9.5.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -63,16 +64,16 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11. **137/137 testów na Pythonie 3.12/3.13/3.14 oraz 5 testów rzeczywistego API + 1 test setup/unload na Core 2026.11.0/Python 3.14.10; dwa urządzenia i 73 encje zarejestrowane, test fizycznego HA pozostaje w 9.5.**
 - [ ] **9.3.9** Zweryfikować manifest, metadane HACS, instalację oraz ścieżkę aktualizacji bez utraty encji. **Preflight ZIP zakończony: utworzono generator, 3 testy pakowania, a CI 137/137 ×3 poprawnie buduje płaski euros_os.zip (15 plików). Nadal otwarte: rzeczywista aktualizacja w Marketplace i zgodność minimum HA (hacs.json 2021.12 vs README 2023.3) oraz decyzja autora o wersji wydania.**
 
-## 9.4 — Rozszerzenie testów automatycznych (0/8)
+## 9.4 — Rozszerzenie testów automatycznych (8/8)
 
-- [ ] **9.4.1** Uporządkować nazwy oraz wyzwalacze workflow, w tym uruchamianie na pull_request.
-- [ ] **9.4.2** Uruchamiać zestaw testów na Pythonie 3.12, 3.13 i 3.14, z uwzględnieniem kompatybilności zależności.
-- [ ] **9.4.3** Rozbudować testy inicjalizacji i wyładowania integracji z API Home Assistant.
-- [ ] **9.4.4** Przetestować automatyczne wykrywanie wielu pomp i liczników.
-- [ ] **9.4.5** Przetestować stale dane MQTT, rozłączenie, ponowne połączenie i wyścigi wątków.
-- [ ] **9.4.6** Przetestować przywracanie dziennych liczników i obsługę niepoprawnych odczytów.
-- [ ] **9.4.7** Przetestować blokady komend i zachowanie dotychczasowych kontrolek.
-- [ ] **9.4.8** Uzyskać zielony wynik wszystkich wymaganych testów bez pominięć i udokumentować zakres.
+- [x] **9.4.1** Uporządkować nazwy oraz wyzwalacze workflow, w tym uruchamianie na pull_request.
+- [x] **9.4.2** Uruchamiać zestaw testów na Pythonie 3.12, 3.13 i 3.14, z uwzględnieniem kompatybilności zależności.
+- [x] **9.4.3** Rozbudować testy inicjalizacji i wyładowania integracji z API Home Assistant.
+- [x] **9.4.4** Przetestować automatyczne wykrywanie wielu pomp i liczników.
+- [x] **9.4.5** Przetestować stale dane MQTT, rozłączenie, ponowne połączenie i wyścigi wątków.
+- [x] **9.4.6** Przetestować przywracanie dziennych liczników i obsługę niepoprawnych odczytów.
+- [x] **9.4.7** Przetestować blokady komend i zachowanie dotychczasowych kontrolek.
+- [x] **9.4.8** Uzyskać zielony wynik wszystkich wymaganych testów bez pominięć i udokumentować zakres.
 
 ## 9.5 — Ostateczna kontrola na rzeczywistym HA (0/8)
 
@@ -140,7 +141,8 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.3.5 | Poprawiono szacowanie energii pompy: bez efektów ubocznych odczytu, RestoreSensor, obsługa luk MQTT i trwały unique_id. Skorygowano klasy RPM i PWM%. Potwierdzono metadane zgodne ze schematem Energy; test w rzeczywistym HA przeniesiony do 9.5. | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 134/134 ×3](https://github.com/BudrysLP/EurosOS/actions/runs/43204946143) |
 | 2026-11-12 | 9.3.9 — preflight pakowania | Zbudowano i zweryfikowano w CI ZIP z 15 plikami integracji oraz kompletność metadanych; wykryto rozbieżność minimalnej HA i wersji wydania. Rzeczywista instalacja Marketplace nie została wykonana; zadanie nadal otwarte | [Raport](ETAP_9_3_MARKETPLACE.md), [CI 137/137 ×3 + ZIP](https://github.com/BudrysLP/EurosOS/actions/runs/43209612693) |
 | 2026-11-12 | 9.3.4 i 9.3.8 | 5 testów prawdziwych klas Home Assistant 2026.11 + 1 test setup/unload Core z atrapą MQTT: 2 urządzenia, 73 encje, 73 unikalne klucze rejestru, poprawne id i odczyty. Brak zmian w produkcyjnym HA | [Raport](ETAP_9_3_TESTY_HA_CORE.md), [CI 137×3 + 6 testów HA](https://github.com/BudrysLP/EurosOS/actions/runs/43212325942) |
+| 2026-11-12 | 9.4.1–9.4.8 | Workflow PR/push, ścisły zakaz pomijania testów, wielopompowe MQTT/METER_N, reconnect/stale, sumowanie dzienne, blokady GEO/CWU i dwukrotny setup/unload HA. 154/154 testów na każdym Pythonie 3.12/3.13/3.14, 6/6 testów prawdziwego HA Core 2026.11, 0 skipped. Pull_request skonfigurowany, ale bez faktycznego PR | [Raport 9.4](ETAP_9_4_TESTY_AUTOMATYCZNE.md), [Zielone CI](https://github.com/BudrysLP/EurosOS/actions/runs/43215284763) |
 
 ## Kolejny ruch
 
-Dokończyć 9.2.5 (bezpieczna weryfikacja certyfikatu brokera TLS i dostępnych wariantów), następnie 9.2.8 (ostateczne testy po każdej zmianie). P1 TLS nadal blokuje końcowy PR; weryfikacja sprzętowa i HA w ETAPIE 9.5.
+Przygotować ETAP 9.5: aktualny backup, inwentaryzację 73 encji i historii energii, plan kontrolowanego testu i rollbacku. Nie instalować niczego na produkcyjnym HA bez odrębnej zgody. Niezależnie pozostają do rozstrzygnięcia 9.2.5 (TLS/P1) i 9.3.9 (Marketplace); po ich zmianach ponownie przejść przez końcową regresję 9.2.8 i 9.8.
