@@ -182,6 +182,21 @@ class DynamicEmsPlatformTests(unittest.TestCase):
             self.hass, self.entry, lambda entities: self.batches.append(entities)
         ))
 
+    def test_legacy_energy_platform_preserves_id_and_geo_exclusion(self):
+        # A legacy key remains the same entity, despite the RestoreSensor class.
+        definitions = {"ZM_AC_IN_ENERGY": ("Energia całkowita", "kWh", "mdi:counter", "energy")}
+        with patch.dict(self.sensor.SENSORS_VARIABLES, definitions, clear=True):
+            self.setup_platform("FriskoATMO")
+            energy = next(e for e in self.batches[0]
+                          if getattr(e, "key", None) == "ZM_AC_IN_ENERGY")
+            self.assertIsInstance(energy, self.sensor.EurosOSLegacyEstimatedEnergySensor)
+            self.assertEqual(energy._attr_unique_id, "abcdef_zm_ac_in_energy")
+            self.assertEqual(energy._attr_native_unit_of_measurement, "kWh")
+            self.assertEqual(energy._attr_state_class, "total_increasing")
+            self.assertEqual(energy._attr_should_poll, False)
+        # On GEO the model filter excludes the unverified pump energy sensor.
+        self.assertIn("ZM_AC_IN_ENERGY", (ROOT / "geo.py").read_text(encoding="utf-8"))
+
     def test_allinone_without_meter_has_no_ems_and_no_fake_device(self):
         self.setup_platform()
         self.assertEqual(self.batches, [[]])
