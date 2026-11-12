@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8).
+Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8); 9.5 W TOKU (1/8, wyłącznie dokumentacja).
 
 ## Zasady
 
@@ -20,15 +20,17 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - Preflight HACS / Marketplace i procedura aktualizacji: [ETAP_9_3_MARKETPLACE.md](ETAP_9_3_MARKETPLACE.md).
 - Rzeczywiste klasy HA 2026.11 i test rejestru 73 encji: [ETAP_9_3_TESTY_HA_CORE.md](ETAP_9_3_TESTY_HA_CORE.md).
 - Rozbudowa testów 9.4, macierz CI i 0 pominięć: [ETAP_9_4_TESTY_AUTOMATYCZNE.md](ETAP_9_4_TESTY_AUTOMATYCZNE.md).
+- Procedura ETAPU 9.5, bramki bezpieczeństwa i prywatne porównanie rejestrów: [ETAP_9_5_PLAN_TESTOW_HA.md](ETAP_9_5_PLAN_TESTOW_HA.md).
+- Narzędzie prywatnego odczytu i porównania 73 encji: [ha_registry_snapshot.py](../scripts/ha_registry_snapshot.py); testy syntetyczne [test_ha_registry_snapshot.py](../tests/test_ha_registry_snapshot.py).
 - Diagnostyka certyfikatu i plan rozwiązań: [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 - Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
 - PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
 
 ## Postęp
 
-- Ukończono: **30/69** zadań (43.5%).
+- Ukończono: **31/69** zadań (44.9%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS P1 i późniejsza regresja; **9.3 (8/9)** — do weryfikacji aktualizacja przez Marketplace (9.3.9); **9.4 (8/8)** — testy automatyczne zakończone (154/154 ×3 + 6/6 rzeczywiste API HA). Fizyczne HA i dane produkcyjne pozostają w 9.5.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS/P1 i regresja po zmianach; **9.3 (8/9)** — do kontroli rzeczywista aktualizacja Marketplace; **9.4 (8/8)** — komplet CI; **9.5 (1/8)** — przygotowano plan i narzędzie prywatnego porównania 73 encji, odhaczono tylko 9.5.7 (lista ograniczeń sprzętowych). Backup, zgoda, wdrożenie i testy fizycznego HA nadal otwarte.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -75,7 +77,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.4.7** Przetestować blokady komend i zachowanie dotychczasowych kontrolek.
 - [x] **9.4.8** Uzyskać zielony wynik wszystkich wymaganych testów bez pominięć i udokumentować zakres.
 
-## 9.5 — Ostateczna kontrola na rzeczywistym HA (0/8)
+## 9.5 — Ostateczna kontrola na rzeczywistym HA (1/8; tylko dokumentacja)
 
 - [ ] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem.
 - [ ] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA.
@@ -83,7 +85,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [ ] **9.5.4** Sprawdzić bieżące aktualizacje oraz ciągłość historii energii przed i po restarcie.
 - [ ] **9.5.5** Zweryfikować zachowanie stale/unavailable i powrotu połączenia w sposób bezpieczny dla pompy.
 - [ ] **9.5.6** Przejrzeć logi po starcie oraz po okresie normalnej pracy.
-- [ ] **9.5.7** Udokumentować nieprzetestowane scenariusze sprzętowe, np. fizyczny METER_2.
+- [x] **9.5.7** Udokumentować nieprzetestowane scenariusze sprzętowe, np. fizyczny METER_2. **Zestawienie sporządzone: ATMO, ALLINONE, METER_2/METER_3, MQTT, TLS, Marketplace i nieweryfikowane przełączenia GEO. Nie oznacza to fizycznego zaliczenia tych scenariuszy.**
 - [ ] **9.5.8** Potwierdzić, że nie ma powodów do rollbacku i że wersja nadaje się do wydania.
 
 ## 9.6 — Dokumentacja i przygotowanie wydania (0/10)
@@ -142,7 +144,8 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.3.9 — preflight pakowania | Zbudowano i zweryfikowano w CI ZIP z 15 plikami integracji oraz kompletność metadanych; wykryto rozbieżność minimalnej HA i wersji wydania. Rzeczywista instalacja Marketplace nie została wykonana; zadanie nadal otwarte | [Raport](ETAP_9_3_MARKETPLACE.md), [CI 137/137 ×3 + ZIP](https://github.com/BudrysLP/EurosOS/actions/runs/43209612693) |
 | 2026-11-12 | 9.3.4 i 9.3.8 | 5 testów prawdziwych klas Home Assistant 2026.11 + 1 test setup/unload Core z atrapą MQTT: 2 urządzenia, 73 encje, 73 unikalne klucze rejestru, poprawne id i odczyty. Brak zmian w produkcyjnym HA | [Raport](ETAP_9_3_TESTY_HA_CORE.md), [CI 137×3 + 6 testów HA](https://github.com/BudrysLP/EurosOS/actions/runs/43212325942) |
 | 2026-11-12 | 9.4.1–9.4.8 | Workflow PR/push, ścisły zakaz pomijania testów, wielopompowe MQTT/METER_N, reconnect/stale, sumowanie dzienne, blokady GEO/CWU i dwukrotny setup/unload HA. 154/154 testów na każdym Pythonie 3.12/3.13/3.14, 6/6 testów prawdziwego HA Core 2026.11, 0 skipped. Pull_request skonfigurowany, ale bez faktycznego PR | [Raport 9.4](ETAP_9_4_TESTY_AUTOMATYCZNE.md), [Zielone CI](https://github.com/BudrysLP/EurosOS/actions/runs/43215284763) |
+| 2026-11-12 | 9.5 przygotowanie + 9.5.7 | Opracowano bramki backup/zgoda, scenariusze HA9-01–HA9-09 i rollback; narzędzie snapshotów sprawdzone w CI na sztucznych danych. Lista nieprzetestowanych urządzeń sporządzona. Brak odczytu aktualnego HA, brak instalacji i restartu | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md), [Snapshoty](../scripts/ha_registry_snapshot.py) |
 
 ## Kolejny ruch
 
-Przygotować ETAP 9.5: aktualny backup, inwentaryzację 73 encji i historii energii, plan kontrolowanego testu i rollbacku. Nie instalować niczego na produkcyjnym HA bez odrębnej zgody. Niezależnie pozostają do rozstrzygnięcia 9.2.5 (TLS/P1) i 9.3.9 (Marketplace); po ich zmianach ponownie przejść przez końcową regresję 9.2.8 i 9.8.
+Plan i narzędzie porównania dla 9.5 przygotowane. Kolejny krok wymaga działania operatora: nowy pełny backup z kluczem szyfrowania, prywatny backup bieżącego kodu i dopiero po odrębnej zgodzie odczyt bazowy 73 encji (9.5.1/9.5.2). Bez zgody nie uruchamiać skryptu na HA, nie zmieniać integracji ani nie restartować Core. TLS 9.2.5/P1 i Marketplace 9.3.9 nadal otwarte; po ich zmianach pełna końcowa regresja 9.2.8/9.8.
