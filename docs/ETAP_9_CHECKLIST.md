@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8); TLS i końcowa regresja nadal otwarte.
+Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (5/9).
 
 ## Zasady
 
@@ -16,15 +16,16 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - Gałąź dokumentacji ETAPU 9: `feature/stage9-audit`.
 - Audyt i rejestr usterek: [ETAP_9_1_AUDYT_TECHNICZNY.md](ETAP_9_1_AUDYT_TECHNICZNY.md).
 - Raport zmian i otwartego ryzyka TLS: [ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md).
+- Audyt zgodności i CI Python 3.14: [ETAP_9_3_KOMPATYBILNOSC.md](ETAP_9_3_KOMPATYBILNOSC.md).
 - Diagnostyka certyfikatu i plan rozwiązań: [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 - Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
 - PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
 
 ## Postęp
 
-- Ukończono: **14/69** zadań (20.3%).
+- Ukończono: **19/69** zadań (27.5%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywny podetap: **9.2 (6/8)** — ukończone poprawki MQTT, dostępności, logowania i sterowania; otwarty TLS (P1) i końcowe testy.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS (P1) i regresja końcowa; **9.3 (5/9)** — otwarte natywne API HA Core, energia, pełne środowisko 2026.11 i aktualizacja Marketplace.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -48,17 +49,17 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
 - [ ] **9.2.8** Każdą potrzebną poprawkę opatrzyć testem regresyjnym.
 
-## 9.3 — Kompatybilność urządzeń i Home Assistant (0/9)
+## 9.3 — Kompatybilność urządzeń i Home Assistant (5/9)
 
-- [ ] **9.3.1** Sprawdzić rozpoznawanie FriskoGEO, FriskoATMO i FriskoALLINONE.
-- [ ] **9.3.2** Zweryfikować wybór pompy niezależnie od kolejności Devices oraz bezpieczeństwo przy wielu pompach.
-- [ ] **9.3.3** Sprawdzić istniejące i nowe unique_id, entity_id i identyfikatory urządzeń.
-- [ ] **9.3.4** Sprawdzić natywne API SensorEntity, NumberEntity, SelectEntity i pozostałych encji.
-- [ ] **9.3.5** Zweryfikować device_class, state_class, jednostki pomiarowe i zgodność z panelem Energia.
-- [ ] **9.3.6** Sprawdzić zachowanie METER_1 i dodatkowych METER_N, bez fikcyjnych liczników.
-- [ ] **9.3.7** Sprawdzić odtwarzanie liczników dziennych, północ, zmianę dnia i przerwy w danych.
-- [ ] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11.
-- [ ] **9.3.9** Zweryfikować manifest, metadane HACS, instalację oraz ścieżkę aktualizacji bez utraty encji.
+- [x] **9.3.1** Sprawdzić rozpoznawanie FriskoGEO, FriskoATMO i FriskoALLINONE.
+- [x] **9.3.2** Zweryfikować wybór pompy niezależnie od kolejności Devices oraz bezpieczeństwo przy wielu pompach.
+- [x] **9.3.3** Sprawdzić istniejące i nowe unique_id, entity_id i identyfikatory urządzeń.
+- [ ] **9.3.4** Sprawdzić natywne API SensorEntity, NumberEntity, SelectEntity i pozostałych encji. **Migrację SensorEntity do native_value wykonano; potrzebna jeszcze kontrola API w prawdziwym HA 2026.11.**
+- [ ] **9.3.5** Zweryfikować device_class, state_class, jednostki pomiarowe i zgodność z panelem Energia. **Pozostał audyt starszego szacowanego ZM_AC_IN_ENERGY i zgodności ze statystykami HA.**
+- [x] **9.3.6** Sprawdzić zachowanie METER_1 i dodatkowych METER_N, bez fikcyjnych liczników.
+- [x] **9.3.7** Sprawdzić odtwarzanie liczników dziennych, północ, zmianę dnia i przerwy w danych.
+- [ ] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11. **Python 3.14.10: 125/125 zielonych testów; końcowe sprawdzenie nowej gałęzi w HA Core 2026.11 jeszcze do wykonania.**
+- [ ] **9.3.9** Zweryfikować manifest, metadane HACS, instalację oraz ścieżkę aktualizacji bez utraty encji. **Potwierdzono archiwa ZIP w wydaniach upstream, lecz minimum HA 2021.12.0 i aktualizację nowej wersji przez Marketplace trzeba zweryfikować.**
 
 ## 9.4 — Rozszerzenie testów automatycznych (0/8)
 
@@ -133,6 +134,7 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.2.5 — dwa testy certyfikatu na sprzęcie | ‘checkip’: mismatch; ‘verify_return_error’: self-signed chain certificate na depth=1 (num=19). To osobne blokady; nie zmieniano połączenia ani produkcyjnego HA | [Wyniki i decyzje](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 | 2026-11-12 | 9.2.5 — liczba certyfikatów | Broker przesyła 2 certyfikaty PEM; zaplanowano odczyt publicznych danych drugiego oraz niezależne potwierdzenie CA. Zadanie pozostaje otwarte | [Procedura TLS](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 | 2026-11-12 | 9.2.5 — weryfikacja drugiego certyfikatu | Subject=Issuer, `CA:TRUE`, nazwy zgodne z publicznym generatorem OwnTracks; to przesłanka metody wygenerowania, nie niezależne uwierzytelnienie CA. 9.2.5 pozostaje P1 | [Analiza](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
+| 2026-11-12 | 9.3.1–9.3.3, 9.3.6–9.3.7 | Rozpoznawanie pomp, porządek MQTT, stałość identyfikatorów, METER_N i restart/dobowe liczniki zaliczone w symulacjach. Python 3.14.10 CI zielony, natywne sensory poprawione, 4 punkty 9.3 nadal otwarte | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 125/125 x3](https://github.com/BudrysLP/EurosOS/actions/runs/43201747083) |
 
 ## Kolejny ruch
 
