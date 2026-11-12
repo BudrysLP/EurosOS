@@ -84,7 +84,13 @@ async def test_real_ha_2026_11_registers_geo_and_ems_without_mqtt(
         )
         assert len(owned_devices) == 2
         assert len(owned_entities) == 73
-        assert len({entity.unique_id for entity in owned_entities}) == 73
+        # HA entity registry uniqueness is (domain, platform, unique_id),
+        # not unique_id alone: sensor and number may share a device key.
+        assert len({
+            (entity.domain, entity.platform, entity.unique_id)
+            for entity in owned_entities
+        }) == 73
+        assert len({entity.unique_id for entity in owned_entities}) == 69
 
         pump = device_registry.async_get_device(
             identifiers={(DOMAIN, "stage9-real-api")}
