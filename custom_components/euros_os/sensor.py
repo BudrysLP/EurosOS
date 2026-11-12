@@ -160,11 +160,16 @@ class EurosOSSensor(SensorEntity):
         self.device_type = device_type
         self.key = key
         self._attr_name = info[0]
-        self._unit = info[1] #self._attr_unit_of_measurement = info[1]
+        self._attr_native_unit_of_measurement = info[1]
         self._attr_icon = info[2]
         self._attr_device_class = info[3]
         self._attr_unique_id = f"{unique_prefix}_{key.lower()}"
         self._attr_device_info = device_info
+        self._attr_state_class = (
+            "total_increasing" if key == "ZM_AC_IN_ENERGY"
+            else None if key in ("STATE", "MODE", "SW_VERSION")
+            else "measurement"
+        )
 
         self._last_energy_update = None
         self._energy_kwh = 0.0
@@ -183,7 +188,7 @@ class EurosOSSensor(SensorEntity):
         )
 
     @property
-    def state(self):
+    def native_value(self):
         device = self.coordinator.device
         if not device:
             return None
@@ -293,26 +298,12 @@ class EurosOSSensor(SensorEntity):
                 # A missing sensor field is not a real zero measurement.
                 value = float(data.get(self.key))
                 if not -50 <= value <= 149:
-                    return "unknown"
+                    return None
                 return round(value, 1)
             except (TypeError, ValueError):
-                return "unknown"
+                return None
 
         return data.get(self.key)
-
-    @property
-    def state_class(self):
-        if self.key == "ZM_AC_IN_ENERGY":
-            return "total_increasing"
-
-        if self.key in {"STATE", "SW_VERSION", "MODE"}:
-            return None
-
-        return "measurement"
-
-    @property
-    def unit_of_measurement(self):
-        return self._unit
 
     @callback
     def _handle_coordinator_update(self):
