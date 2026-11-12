@@ -79,7 +79,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 
 ## 9.5 — Ostateczna kontrola na rzeczywistym HA (1/8; tylko dokumentacja)
 
-- [ ] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem. **Zrzut HA 12.11.2026: 3 automatyczne kopie, najnowsza „Automatic backup 2026.11.1” 1,2 GB (2 min wcześniej). Nadal niepotwierdzone: kompletność, pobranie poza HA, klucz szyfrowania i osobna kopia aktualnej integracji; punkt pozostaje otwarty.**
+- [ ] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem. **Zrzut HA 12.11.2026: 3 automatyczne kopie; najnowsza 1,2 GB. Operator potwierdził pobranie kopii na komputer. Bez niezależnej kontroli jej zawartości oraz osobnego potwierdzenia dostępności klucza szyfrowania i kopii aktualnego katalogu integracji punkt pozostaje otwarty.**
 - [ ] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA.
 - [ ] **9.5.3** Sprawdzić GEO_1, EMS Dom i dotychczasowe 73 encje po ewentualnych poprawkach.
 - [ ] **9.5.4** Sprawdzić bieżące aktualizacje oraz ciągłość historii energii przed i po restarcie.
@@ -146,6 +146,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.4.1–9.4.8 | Workflow PR/push, ścisły zakaz pomijania testów, wielopompowe MQTT/METER_N, reconnect/stale, sumowanie dzienne, blokady GEO/CWU i dwukrotny setup/unload HA. 154/154 testów na każdym Pythonie 3.12/3.13/3.14, 6/6 testów prawdziwego HA Core 2026.11, 0 skipped. Pull_request skonfigurowany, ale bez faktycznego PR | [Raport 9.4](ETAP_9_4_TESTY_AUTOMATYCZNE.md), [Zielone CI](https://github.com/BudrysLP/EurosOS/actions/runs/43215284763) |
 | 2026-11-12 | 9.5 przygotowanie + 9.5.7 | Opracowano bramki backup/zgoda, scenariusze HA9-01–HA9-09 i rollback; narzędzie snapshotów sprawdzone w CI na sztucznych danych. Lista nieprzetestowanych urządzeń sporządzona. Brak odczytu aktualnego HA, brak instalacji i restartu | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md), [Snapshoty](../scripts/ha_registry_snapshot.py) |
 | 2026-11-12 | 9.5.1 – weryfikacja backupów | Użytkownik pokazał 3 kopie automatyczne; najnowsza opisana jako 2026.11.1 (1,2 GB). Nie jest jeszcze potwierdzona kompletność, kopia poza HA ani osobne archiwum bieżącej integracji. Punkt 9.5.1 pozostaje otwarty | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
+| 2026-11-12 | 9.5.1 – potwierdzenie użytkownika | Operator potwierdził pobranie najnowszej kopii na komputer. Niezweryfikowane niezależnie: możliwość odtworzenia, klucz szyfrowania, odrębne bieżące archiwum euros_os. Bez instalacji, restartu i odczytu rejestrów | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
 
 ## Kolejny ruch
 
