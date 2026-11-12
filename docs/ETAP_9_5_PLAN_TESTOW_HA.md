@@ -129,9 +129,9 @@ Nie wprowadzono zmian ani nie restartowano HA, nie zlecając jeszcze aktualizacj
 | Kod | Kroki | Kryterium zaliczenia | Status |
 | --- | --- | --- | --- |
 | HA9-01 | Przed zmianą: snapshot rejestru i wersja HA | 73/73 encje, 2 urządzenia, kopia prywatna, znany SHA aktualnego kodu | **ZALICZONE:** snapshot 73/2, zabezpieczenia 9.5.1 i porównanie 15/15 plików z commitem `12d2502091d2364e7cb1803eef3bd523a31618de`. Nadal wymagana osobna zgoda na wdrożenie |
-| HA9-02 | Po instalacji: setup GEO_1 i METER_1 | 2 urządzenia, 38+35 encji, żadnej zmiany ID, brak duplikatów | ⏳ NIE WYKONANO |
-| HA9-03 | Po instalacji: odczyty GEO | Temperatury, tryb, stany pomp, CWU i FW prawidłowe i dostępne, bez fikcyjnych zer | ⏳ NIE WYKONANO |
-| HA9-04 | Po instalacji: EMS Dom | Moc, import/eksport i 2 liczniki dzienne są aktualne, nie mieszają danych pompy i domu | ⏳ NIE WYKONANO |
+| HA9-02 | Po instalacji: setup GEO_1 i METER_1 | 2 urządzenia, 38+35 encji, żadnej zmiany ID, brak duplikatów | **ZALICZONE 12.11:** UI 2 urządzenia, 38+35 encji; porównanie rejestrów 73/2 = 0 różnic |
+| HA9-03 | Po instalacji: odczyty GEO | Temperatury, tryb, stany pomp, CWU i FW prawidłowe i dostępne, bez fikcyjnych zer | **ZALICZONE 12.11 jako smoke test:** EMS/CWU, FW 870.12, zmienne i sensowne temperatury (CWU 46,1°C; zew. 3,0°C), brak `unavailable` na widocznych encjach |
+| HA9-04 | Po instalacji: EMS Dom | Moc, import/eksport i 2 liczniki dzienne są aktualne, nie mieszają danych pompy i domu | **ZALICZONE 12.11 jako smoke test:** 3,24 kW, fazy sumują się, dzienny import 10,15 kWh / eksport 0,17 kWh, zmienne wartości; techniczne pola ze znakami ujemnymi do osobnej analizy |
 | HA9-05 | Ciągłość historii | Recorder i Panel Energia mają ciągłość starych entity_id i naturalne narastanie energii; bez błędnych resetów | ⏳ NIE WYKONANO |
 | HA9-06 | Przywrócenie dostępności po przerwie MQTT | Bezpieczna próba na nieprodukcyjnym brokerze/fixture lub pasywna obserwacja; brak wymuszonego odłączenia pracującej pompy | ⏳ NIE WYKONANO |
 | HA9-07 | Restart HA Core | Tylko po wyraźnej zgodzie: poprawny restart i brak nowych entity_id, właściwy restore energii | ⏳ NIE WYKONANO |
