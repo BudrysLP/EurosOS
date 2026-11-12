@@ -49,6 +49,21 @@ python3 /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py \
 
 **Skrypt stagingu przypięto do dokładnego commitu `260ad5d6b9c1c6d7988745f4771406ffb0a02965`, dla którego GitHub Actions przeszedł.** Odrębny commit z kodem integracji do wdrożenia to `07a49bccc0cb590f3179983156c706dbe4675189`. Po stagingu zachować sam wynik, nie załączać archiwów ani prywatnych plików.
 
+## 3.1. Staging na HA — wynik operatora 12 listopada 2026
+
+Operator uruchomił polecenie z przypiętym skryptem `260ad5d6b9c1c6d7988745f4771406ffb0a02965` i dokładnym SHA kandydata `07a49bccc0cb590f3179983156c706dbe4675189`. Otrzymany komunikat:
+
+```text
+STAGED ONLY: 15/15 verified integration files
+COMMIT: 07a49bccc0cb590f3179983156c706dbe4675189
+STAGING DIRECTORY: /homeassistant/euros_os_stage9_private/stage9_candidate_07a49bccc0cb/euros_os
+LIVE INTEGRATION: UNCHANGED; NO HA RESTART
+```
+
+Różnica między ścieżką wskazaną jako `/config` i wypisaną jako `/homeassistant` może wynikać z rozwiązania symlinku przez `Path.resolve()`; polecenia dalszej weryfikacji powinny używać `/config/euros_os_stage9_private`, a nie sztywnej ścieżki fizycznej.
+
+**Zaliczone: weryfikacja 15 blobów Git oraz zapis osobnego katalogu stagingu.** Nie potwierdzono jeszcze porównania zmian pomiędzy nową a żywą integracją po stagingu ani sygnału rozpoczęcia okna serwisowego. Instalacja/restart pozostają niewykonane.
+
 ## 4. Przed instalacją — bramki STOP
 
 - Prywatny `before.json` ma 73 encje, 2 urządzenia; użytkownik potwierdził jego utworzenie 12.11.2026.
