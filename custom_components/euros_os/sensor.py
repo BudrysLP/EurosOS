@@ -66,7 +66,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if not entity_supported_for_device(key, device_type):
             continue
         model_info = sensor_info_for_device(key, info, device_type)
-        entities.append(EurosOSSensor(coordinator, key, model_info, unique_prefix, device_info, device_type=device_type))
+        sensor_class = EurosOSLegacyEstimatedEnergySensor if key == "ZM_AC_IN_ENERGY" else EurosOSSensor
+        entities.append(sensor_class(coordinator, key, model_info, unique_prefix, device_info, device_type=device_type))
 
     if device_type == GEO_DEVICE_TYPE:
         for key, label in (
@@ -172,9 +173,6 @@ class EurosOSSensor(SensorEntity):
             else "measurement"
         )
 
-        self._last_energy_update = None
-        self._energy_kwh = 0.0
-
 
         coordinator.async_add_listener(self._handle_coordinator_update)
 
@@ -273,29 +271,6 @@ class EurosOSSensor(SensorEntity):
             except (KeyError, TypeError, ValueError, OverflowError):
                 return None
 
-        if self.key == "ZM_AC_IN_ENERGY":
-            try:
-                amps = float(data.get("ZM_AC_IN_CUR", 0))
-                volts = float(data.get("ZM_AC_IN_VOL", 230))
-                power_w = amps * volts
-
-                from homeassistant.util import dt as dt_util
-                now = dt_util.utcnow()
-
-                if self._last_energy_update is None:
-                    self._last_energy_update = now
-                    self._energy_kwh = 0.0
-                    return round(self._energy_kwh, 4)
-
-                elapsed_h = (now - self._last_energy_update).total_seconds() / 3600.0
-                self._last_energy_update = now
-                self._energy_kwh += (power_w * elapsed_h) / 1000.0
-
-                return round(self._energy_kwh, 4)
-            except Exception as e:
-                _LOGGER.warning("Error calculating energy: %s", e)
-                return None
-
         if getattr(self, "_attr_device_class", None) == "temperature":
             try:
                 # A missing sensor field is not a real zero measurement.
@@ -324,6 +299,112 @@ class EurosOSSensor(SensorEntity):
 
     async def async_will_remove_from_hass(self):
         self.coordinator.async_remove_listener(self._handle_coordinator_update)
+
+
+class EurosOSLegacyEstimatedEnergySensor(RestoreSensor):
+    """ATMO/ALLINONE estimated kWh from MQTT samples (not the EMS meter).
+
+    Calculate only for successive fresh MQTT pump samples, never from a HA
+    native_value getter. Persist a total across restarts through RestoreSensor.
+    Skip gaps longer than MQTT_TIMEOUT rather than invent energy during outages.
+    This deliberately retains the old entity unique_id for HA registry history.
+    """
+
+    _attr_should_poll = False
+
+    def __init__(self, coordinator, key, info, unique_prefix, device_info, device_type=None):
+        self.coordinator = coordinator
+        self.device_type = device_type
+        self.key = key
+        self._attr_name = info[0]
+        self._attr_icon = info[2]
+        self._attr_device_class = "energy"
+        self._attr_state_class = "total_increasing"
+        self._attr_native_unit_of_measurement = "kWh"
+        self._attr_suggested_display_precision = 4
+        self._attr_unique_id = f"{unique_prefix}_{key.lower()}"
+        self._attr_device_info = device_info
+        self._attr_native_value = None
+        self._total_kwh = None
+        self._last_timestamp = None
+        self._last_power_w = None
+        self._active = False
+        coordinator.async_add_listener(self._handle_coordinator_update)
+
+    @property
+    def available(self):
+        timestamp = getattr(self.coordinator, "_last_update", None)
+        return (
+            timestamp is not None
+            and time.time() - timestamp <= MQTT_TIMEOUT
+            and self._attr_native_value is not None
+        )
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        restored = await self.async_get_last_sensor_data()
+        if restored is not None:
+            value = parse_ems_numeric(getattr(restored, "native_value", None))
+            if value is not None and value >= 0:
+                self._total_kwh = value
+                self._attr_native_value = round(value, 4)
+        self._active = True
+        # Start from latest sample: do not count time while HA was offline.
+        self._refresh_from_pump()
+
+    @callback
+    def _refresh_from_pump(self):
+        if not self._active:
+            return
+        timestamp = getattr(self.coordinator, "_last_update", None)
+        if timestamp is None or timestamp == self._last_timestamp:
+            return
+        if self._last_timestamp is not None and timestamp < self._last_timestamp:
+            # A system-clock adjustment cannot create extra energy.
+            self._last_power_w = None
+
+        pump = getattr(self.coordinator, "device", None)
+        data = pump.get("Data") if isinstance(pump, dict) else None
+        power_w = None
+        if isinstance(data, dict):
+            amps = parse_ems_numeric(data.get("ZM_AC_IN_CUR"))
+            volts = parse_ems_numeric(data.get("ZM_AC_IN_VOL"))
+            if amps is not None and volts is not None and amps >= 0 and volts >= 0:
+                power_w = amps * volts
+                if not math.isfinite(power_w):
+                    power_w = None
+
+        if power_w is not None:
+            if self._total_kwh is None:
+                self._total_kwh = 0.0
+            if (
+                self._last_timestamp is not None
+                and self._last_power_w is not None
+                and 0 < timestamp - self._last_timestamp <= MQTT_TIMEOUT
+            ):
+                # Trapezoidal estimate: power(W) × time(s) / 3,600,000.
+                increment = (
+                    (self._last_power_w + power_w) / 2
+                    * (timestamp - self._last_timestamp)
+                    / 3_600_000
+                )
+                self._total_kwh += increment
+            self._attr_native_value = round(self._total_kwh, 4)
+
+        # Invalid or missing power breaks the integration interval.
+        self._last_timestamp = timestamp
+        self._last_power_w = power_w
+        self.async_write_ha_state()
+
+    @callback
+    def _handle_coordinator_update(self):
+        if self._active and self.hass and not self.hass.loop.is_closed():
+            self.hass.loop.call_soon_threadsafe(self._refresh_from_pump)
+
+    async def async_will_remove_from_hass(self):
+        self._active = False
+        self.coordinator.async_remove_listener(self._handle_coordinator_update)
+
 
 class EurosOSEMSMeterSensor(SensorEntity):
     """Read-only, directly metered electricity measurements for the whole home."""
