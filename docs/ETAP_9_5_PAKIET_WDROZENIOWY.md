@@ -1,0 +1,76 @@
+# Euros OS — ETAP 9.5.2: zatwierdzony zakres i przygotowanie paczki testowej
+
+**Data:** 12 listopada 2026. **Stan:** zakres testu zatwierdzony przez operatora; przygotowanie paczki w toku, ale NIE WYKONANO instalacji ani restartu HA.  
+**Wersja produkcyjna — potwierdzona pełnym porównaniem 15/15 plików:**
+`12d2502091d2364e7cb1803eef3bd523a31618de` (ETAP 8).  
+**Wersja testowa — przypięta, niezmienna referencja runtime:**
+`07a49bccc0cb590f3179983156c706dbe4675189` (ETAP 9.5, przed pracami nad dokumentacją i narzędziem staging).
+**Gałąź przygotowania:** `feature/stage9-deployment-prep`. Dodatkowe skrypty testowe nie są instalowane w HA jako część integracji.
+
+## 1. Co zatwierdził operator
+
+Operator zaakceptował *zakres* testu na działającym HA: wymiana plików samej integracji Euros OS, maksymalnie **jeden** uzgodniony restart HA Core, odczytowa kontrola pompy GEO_1, EMS Dom, 73 encji, powiązania dwóch urządzeń, logów i ciągłości energii. Zakres **nie obejmuje** zmieniania nastaw pompy, konfiguracji MQTT, certyfikatów TLS, rejestrów `.storage`, historii Recorder ani instalowania dodatkowych urządzeń.
+
+Zgoda na zakres **nie jest jeszcze poleceniem wykonania instalacji**. Przed podmianą kodu operator ma zobaczyć wynik stagingu i wyraźnie wskazać start okna serwisowego. Obecny etap przygotowania ma być całkowicie odwracalny.
+
+## 2. Dlaczego przypinamy runtime do SHA
+
+Rozwojowa gałąź `feature/stage9-ha-validation` może się zmieniać wraz z dokumentacją i testami. Aby uniknąć przypadkowej instalacji późniejszego, niesprawdzonego commitu, przygotowanie i planowane wdrożenie są oparte na **pełnym** SHA `07a49bccc0cb590f3179983156c706dbe4675189`.
+
+- GitHub CI tego commitu: https://github.com/BudrysLP/EurosOS/actions/runs/43271935047 (**success**).
+- Porównanie z ETAPEM 8: `ahead 114`, `behind 0`; zmiany runtime dotyczą 11 plików, a `geo.py`, `ems.py` i pliki tłumaczeń pozostają zgodne z bazą.
+- Weryfikacja HACS ZIP w testach projektu wykazała poprawną strukturę 15 plików; **nie jest to jeszcze rzeczywisty test instalacji przez Marketplace**.
+- W `manifest.json` wciąż jest `version: 0.1.0`, a w HACS metadata istnieje niespójne minimum wersji HA. To nie jest oficjalne wydanie; numeru wersji nie zmieniano podczas przygotowań.
+- Home Assistant Core w CI: `2026.11.0` z Pythonem 3.14; terminal użytkownika potwierdził `Python 3.14.10`, a kopie noszą nazwę `2026.11.1`. Rzeczywistą wersję Core i szczegóły środowiska trzeba odczytać w HA przy kontroli przed restartem.
+
+## 3. Narzędzie staging — bez ingerencji w produkcję
+
+`scripts/prepare_ha_stage9_candidate.py` wykonuje **tylko** następujące czynności:
+
+1. Pobiera z oficjalnego repozytorium GitHub archiwum źródeł dla wskazanego pełnego SHA oraz listę blobów `git/trees/<sha>?recursive=1`.
+2. Wydziela **wyłącznie** `custom_components/euros_os/`, dokładnie **15** plików.
+3. Porównuje każdy plik z hash SHA-1 obiektu Git: `SHA1("blob " + rozmiar + NUL + zawartość)`. To kontrola **tożsamości z commitem**, a nie ogólna rekomendacja SHA-1 do kryptograficznego uwierzytelniania.
+4. Odrzuca nieoczekiwane ścieżki, symlinki, duplikaty, błędną domenę, niekompletny zestaw lub rozbieżność zawartości.
+5. Zapisuje po weryfikacji nowy katalog prywatny `stage9_candidate_07a49bccc0cb/euros_os` obok `before.json` i backupu, a nie do `/config/custom_components/`. Nigdy nie nadpisuje istniejącego katalogu.
+6. Wypisuje jedynie liczbę zweryfikowanych plików, SHA i ścieżkę stagingu. **Nie otwiera połączenia z MQTT, nie dokonuje zmian w HA, nie resetuje Core.**
+
+**Polecenia dopiero po ponownej kontroli gotowości skryptu i CI; nie wykonano ich jeszcze na HA**:
+
+```sh
+curl -fLsS https://raw.githubusercontent.com/BudrysLP/EurosOS/BRANCH_OR_PINNED_PREP_COMMIT/scripts/prepare_ha_stage9_candidate.py \
+  -o /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py.new
+python3 -m py_compile /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py.new
+mv /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py.new \
+   /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py
+python3 /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py \
+  --sha 07a49bccc0cb590f3179983156c706dbe4675189 \
+  --stage-root /config/euros_os_stage9_private
+```
+
+**Nie używać dosłownie placeholdera `BRANCH_OR_PINNED_PREP_COMMIT`**. Instrukcja końcowa ma podać pełny hash commitu zawierającego skrypt po zielonym CI. Po stagingu zachować wynik w dokumentacji.
+
+## 4. Przed instalacją — bramki STOP
+
+- Prywatny `before.json` ma 73 encje, 2 urządzenia; użytkownik potwierdził jego utworzenie 12.11.2026.
+- Pełny backup 1,2 GB poza HA, Emergency Kit oraz archiwum `euros_os_before_stage9_20261112.tar.gz` (66,5 KB, `tar -tzf` zaliczone). Wszystkie poświadczone przez operatora; nie wykonywano próbnego odtwarzania.
+- Aktualna wersja LIVE zgodna 15/15 z ETAPEM 8. Przed instalacją, jeśli upłynął czas lub były jakiekolwiek inne aktualizacje, powtórzyć read-only kontrolę i/lub odświeżyć backup.
+- Staging: 15/15 zweryfikowanych blobów, bez innych plików, pod prywatną ścieżką, nie w folderze produkcyjnym.
+- Wyraźny sygnał rozpoczęcia testu w ustalonym oknie serwisowym i gotowość do rollbacku.
+- Ze względu na otwarty TLS P1 nie modyfikować sposobu uwierzytelniania brokera. Nie traktować tymczasowego testu jako zgody na publikację końcowego PR.
+
+## 5. Kryteria powdrożeniowe i rollback
+
+Po osobnym zatwierdzeniu faktycznej wymiany (NIE w tym kroku):
+
+1. Wykonać kontrolowane zastąpienie tylko `/config/custom_components/euros_os/` zweryfikowanymi 15 plikami (najpierw kopia działającego katalogu, później atomowe przełączenie, bez modyfikacji `.storage`).
+2. Jeden kontrolowany restart **HA Core**, bez restartu całego hosta, gdy operator wyraźnie uruchomi okno testu.
+3. Sprawdzić, że `GEO_1` i `EMS – Dom` są dostępne, działają 73 encje i 2 urządzenia, brak ERROR/traceback przypisywalnych integracji oraz brak zmiany ID.
+4. Utworzyć prywatny `after.json` i porównać z `before.json`: `missing_entities = new_entities = changed_entity_ids = changed_device_links = missing_devices = new_devices = changed_parent_links = 0`.
+5. Sprawdzić rzeczywiste odczyty i ciągłość energii po restarcie, bez wysyłania komend sterujących pompą.
+6. Jeśli choć jedna krytyczna kontrola zawiedzie: natychmiast przerwać test, przywrócić **archiwum bieżącego kodu** bez kasowania encji i historii, a restart Core wykonać w niezbędnym zakresie — możliwość dodatkowego restartu awaryjnego wymaga akceptacji operatora.
+
+**Brak zgody na oficjalne wydanie, aktualizację przez Marketplace i końcowy PR**. Otwarte TLS `9.2.5` (P1) oraz `9.3.9` nie są zamykane przez staging.
+
+## 6. Stan checklisty
+
+ETAP 9: **32/69 zadań**. 9.5.1 i 9.5.7 zakończone. Zakres 9.5.2 zaakceptowany, ale samo zadanie pozostaje otwarte do przygotowania kandydata i ustalenia okna serwisowego; 9.5.3–9.5.6 oraz 9.5.8 wymagają testów na działającym HA.
