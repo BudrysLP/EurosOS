@@ -124,7 +124,17 @@ HA CORE: NOT RESTARTED
 
 **Następna bramka:** sprawdzić konfigurację `ha core check`, a po wyniku bez błędów przeprowadzić jeden zatwierdzony `ha core restart` (bez safe mode). Po starcie zbadać GEO/EMS, logi i prywatne porównanie 73 encji. W razie problemów nie wykonywać automatycznych kolejnych restartów ani nie przywracać całego backupu bez analizy.
 
-## 5. Kryteria powdrożeniowe i rollback
+## 4.3. Restart zgłoszony przez operatora — do weryfikacji
+
+Po poprawnej podmianie katalogu operator otrzymał polecenie `ha core check && ha core restart` i odpowiedział **„Zrobione”**. Przyjmujemy, że wykonał polecenie, ale nie dysponujemy osobnym wynikiem `ha core check` ani odczytem statusu po ponownym uruchomieniu. **Nie oznacza to jeszcze zaliczenia testów funkcjonalnych.**
+
+**Kolejne kroki bez ingerencji w działanie pompy:**
+1. Zarejestrować osobny prywatny `after.json` aktualnego rejestru (wymagane 73 encje, 2 urządzenia).
+2. Porównać `after.json` z `before.json` skryptem `ha_registry_snapshot.py compare` (oczekiwane 0 różnic w identyfikatorach).
+3. Sprawdzić na panelu integrację Euros OS, odczyty GEO_1 i EMS Dom oraz ciągłość historii energii.
+4. Skontrolować logi Core i nie wykonywać dodatkowego restartu bez osobnej decyzji operatora.
+
+
 
 Po osobnym zatwierdzeniu faktycznej wymiany (NIE w tym kroku):
 
