@@ -108,6 +108,22 @@ HA: bez zmian, bez restartu
 
 Sprawdzono manifest źródła, zgodność 15 ścieżek LIVE/STAGE, istnienie snapshotu rejestru oraz odczyt archiwum rollback. Wynik dopuszcza wyłącznie przeprowadzenie przygotowanej zamiany kodu w zatwierdzonym oknie; nie oznacza, że podmiana lub restart już nastąpiły.
 
+## 4.2. Podmiana kodu — potwierdzona, Core jeszcze nie uruchomiony ponownie
+
+Operator uruchomił kontrolowaną podmianę katalogu produkcyjnego z prywatnego stagingu. Terminal pokazał:
+
+```text
+FINAL CHECK: PASS
+SWAP: PASS
+LIVE: 15/15 new files verified
+ROLLBACK: /config/euros_os_stage9_private/euros_os_live_rollback_stage9
+HA CORE: NOT RESTARTED
+```
+
+**Potwierdzone:** na dysku działa już zestaw 15 plików z kandydata `07a49bccc0cb590f3179983156c706dbe4675189`, a poprzedni katalog przeniesiono do prywatnego `euros_os_live_rollback_stage9`. Poprzednio wykonane archiwum `tar.gz` nadal istnieje. To **nie jest jeszcze dowód działania nowego kodu**, ponieważ HA Core nie uruchamiano ponownie po podmianie. Nie sprawdzano ponownie MQTT, odczytów, rejestrów ani historii.
+
+**Następna bramka:** sprawdzić konfigurację `ha core check`, a po wyniku bez błędów przeprowadzić jeden zatwierdzony `ha core restart` (bez safe mode). Po starcie zbadać GEO/EMS, logi i prywatne porównanie 73 encji. W razie problemów nie wykonywać automatycznych kolejnych restartów ani nie przywracać całego backupu bez analizy.
+
 ## 5. Kryteria powdrożeniowe i rollback
 
 Po osobnym zatwierdzeniu faktycznej wymiany (NIE w tym kroku):
