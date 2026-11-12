@@ -1,12 +1,12 @@
 # Euros OS — ETAP 9.3: kompatybilność urządzeń, API HA i instalacji
 
-**Data aktualizacji:** 2026-11-12. **Etap:** częściowo zakończony — **6/9** zadań formalnie zaliczonych (9.3.5 w zakresie zgodności metadanych i symulacji; test panelu na prawdziwym HA w 9.5). Brak instalacji nowego kodu w produkcyjnym HA; nie ma PR do autora.
+**Data aktualizacji:** 2026-11-12. **Etap:** częściowo zakończony — **8/9** zadań formalnie zaliczonych (9.3.5 w zakresie zgodności metadanych i symulacji; test panelu na prawdziwym HA w 9.5). Brak instalacji nowego kodu w produkcyjnym HA; nie ma PR do autora.
 
 ## Repozytorium i wynik testów
 
 - Gałąź prac: `feature/stage9-compatibility`, powstała z `feature/stage9-reliability`.
 - Wersja bazowa HA użytkownika w testach z 9 listopada: Core 2026.11.0, GEO_1 oraz EMS Dom / METER_1, łącznie 73 nienaruszone identyfikatory.
-- [Przebieg CI](https://github.com/BudrysLP/EurosOS/actions/runs/43204946143) po migracji sensorów: **134/134** Python 3.12, **134/134** Python 3.13, **134/134** Python 3.14. Są to testy automatyczne i symulacyjne; to NIE jest pełna instalacja Home Assistant Core.
+- [Przebieg CI](https://github.com/BudrysLP/EurosOS/actions/runs/43212325942): **137/137** testów jednostkowych/symulacyjnych na każdej z wersji Python 3.12/3.13/3.14, dodatkowo **5/5** testów rzeczywistych klas encji HA i **1/1** test setup/unload na pełnym Home Assistant Core 2026.11.0 (Python 3.14.10). MQTT w teście HA jest symulowany, bez połączenia z pompą.
 - Home Assistant 2026.11 wymaga **Python >=3.14.2**: https://pypi.org/project/homeassistant/ .
 - Podczas pierwszego CI `3.14.2` instalacja na `ubuntu-latest` / Ubuntu 26.04 zakończyła się błędem dostępności dokładnego patcha w `actions/setup-python`, a nie błędem integracji. Ustalono `ubuntu-24.04`, `setup-python@v6` i najnowszy patch 3.14 spełniający >=3.14.2; wynik zielony.
 - Oficjalna dokumentacja SensorEntity: https://contributors.home-assistant.io/core/entities/sensor/ .
@@ -20,6 +20,8 @@
 | 9.3.1 | **Wykonane (symulacje)** | `discovery.find_pump()` rozpoznaje FriskoGEO, FriskoATMO i FriskoALLINONE po typie. Nie oznacza to testów fizycznych ATMO i ALLINONE. |
 | 9.3.2 | **Wykonane (symulacje)** | Kolejność `Devices` nie zmienia wyboru pompy. Dwie pompy bez jednoznacznej tożsamości są odrzucane; skonfigurowana pompa nie jest podmieniana. |
 | 9.3.3 | **Wykonane (analiza + wcześniejsze testy HA)** | Istniejące `unique_id`/identyfikatory urządzeń pozostają niezmienione w kodzie; 73 `entity_id`, `unique_id` i `device_id` zweryfikowano na fizycznym HA w ETAPIE 8. Ponowna kontrola najnowszej gałęzi w HA należy do 9.5. |
+| 9.3.4 | **Wykonane (rzeczywiste API HA)** | Przeprowadzono 5 testów klas `SensorEntity`, `RestoreSensor`, `NumberEntity`, `SelectEntity`, `SwitchEntity` i `BinarySensorEntity` z faktycznych bibliotek Home Assistant 2026.11 oraz test platform i rejestru. [Raport](ETAP_9_3_TESTY_HA_CORE.md). |
+| 9.3.8 | **Wykonane (testowa instancja HA Core 2026.11.0)** | Python 3.14.10, prawdziwy `hass` i `MockConfigEntry`, 2 urządzenia, 73 poprawne klucze rejestru encji, odczyt 23.5°C, setup/unload bez kasowania wpisów. MQTT symulowany, realny HA do 9.5. [Raport](ETAP_9_3_TESTY_HA_CORE.md). |
 | 9.3.5 | **Wykonane (walidacja schematów + testy symulacyjne)** | Naprawiono legacy `ZM_AC_IN_ENERGY` przez wydzielenie `RestoreSensor`, integrację tylko przy nowych pakietach MQTT i bez podwójnego naliczania przy odczycie. Zachowano `unique_id`; istniejący wskaźnik nie jest bezpośrednim pomiarem pompy. Zweryfikowano deklaracje `device_class`, `state_class`, `kWh`, a także `PWM_1` (%) i obroty wentylatorów (RPM). Prawdziwy panel Energia i nowa gałąź wymagają weryfikacji w 9.5. |
 | 9.3.6 | **Wykonane (symulacje)** | `METER_1`: 33 sensory + 2 liczniki dzienne, stałe ID i nazwy. `METER_N`: tworzone dopiero po realnym polu MQTT; brak fantomowych liczników. Fizyczny METER_2 nadal nieprzetestowany. |
 | 9.3.7 | **Wykonane (symulacje + wcześniejszy HA)** | Testy obrotu dnia, timera północy, restore po restarcie, niepoprawnych odczytów, drobnego spadku i resetu licznika; historia energii na rzeczywistym HA przeżyła restart ETAPU 8. |
@@ -27,17 +29,19 @@
 ## Zmiany w gałęzi 9.3
 
 1. `sensor.py`: starszy EurosOSSensor przeniesiony z override `state` / `unit_of_measurement` / `state_class` na `native_value`, `_attr_native_unit_of_measurement` i `_attr_state_class`. Zasady HA: `None` = unknown, `available=False` = unavailable; nie wysyłać napisu `unknown` jako odczytu temperatury. `unique_id` pozostał bez zmian.
-2. Dla wartości liczbowych z `state_class` odrzucane są `NaN`, `inf`, wartości logiczne i nienumeryczne; brak napięcia lub prądu w szacowanej mocy nie jest przedstawiany jako pomiar 0 W. Dodano regresje. **Uwaga:** nadal istnieje wcześniejszy algorytm szacowania `ZM_AC_IN_ENERGY` na podstawie czasu odczytu sensora; jego semantyka wymaga osobnej analizy przed uznaniem 9.3.5.
+2. Dla wartości liczbowych z `state_class` odrzucane są `NaN`, `inf`, wartości logiczne i nienumeryczne; brak napięcia lub prądu w szacowanej mocy nie jest przedstawiany jako pomiar 0 W. Dodano regresje. **Zrobiono:** algorytm szacowania `ZM_AC_IN_ENERGY` przepisano na `RestoreSensor`, z obliczaniem tylko po nowej próbce MQTT, bez naliczania od czasu odczytu stanu; szczegóły w 9.3.5 poniżej.
 3. `manifest.json` oraz `hacs.json`: `iot_class` zmieniono z `local_polling` na `local_push`; faktyczna telemetria dociera z brokera MQTT i powiadamia HA. Nie zmieniano wersji wydania ani sposobu instalacji.
 4. CI rozbudowano o Python 3.14 na kompatybilnym runnerze.
 5. Testy `test_dynamic_ems.py`, `test_mqtt_to_ha_integration.py`, `test_ha08_compat.py`, `test_manifest_preflight.py` dostosowano/rozszerzono.
+
+## Test pełnego API i rejestracji Core 2026.11
+
+Dodatkowy raport [ETAP_9_3_TESTY_HA_CORE.md](ETAP_9_3_TESTY_HA_CORE.md) dokumentuje konfigurację `pytest-homeassistant`, pięć testów prawdziwych klas oraz jeden test uruchomienia/wyładowania integracji w testowym HA Core. Wszystkie 73 encje rejestrują się prawidłowo w dwóch urządzeniach. Cztery tekstowe `unique_id` są powtarzane pomiędzy różnymi domenami i są rozróżniane przez domenę i platformę — zgodnie z zasadami Home Assistant. [GitHub Actions](https://github.com/BudrysLP/EurosOS/actions/runs/43212325942) przeszedł.
 
 ## Pozostałe zadania — nie odhaczać przedwcześnie
 
 | ID | Ryzyko / stan | Następny bezpieczny krok |
 | --- | --- | --- |
-| 9.3.4 | **W toku:** kod odświeżony do natywnego API, ale pełnej kontroli z prawdziwym pakietem HA Core 2026.11 (w szczególności RestoreSensor i kontrolek) nie wykonano. | Test w realnym środowisku HA API i kontrola liczby/stanów encji bez zmian identyfikatorów. |
-| 9.3.8 | **Częściowo:** Python 3.14.10 i wszystkie symulacje zielone, ale nie instalowano nowej gałęzi w prawdziwym HA Core 2026.11. | Weryfikacja uruchomienia Core/encje, jeśli podejmiemy kontrolowaną aktualizację w ETAPIE 9.5. |
 | 9.3.9 | **W toku:** istniejący upstream ma archiwa `euros_os.zip` w wydaniach `v0.1.0`, `v0.1.1`, `v0.1.1-hotfix`, `v0.1.2`. `hacs.json` ma `zip_release:true`, ale fork nie ma własnych wydań; `homeassistant:2021.12.0` i metadane wersji nie odzwierciedlają zweryfikowanego zakresu. | Uzgodnić minimalną wersję HA i wymagania Marketplace, nie zmieniać `zip_release` i nie oznaczać starszych HA jako wspieranych bez testów. Test instalacji/upgrade w 9.5/9.6. |
 
 ## Szczegółowy wynik zadania 9.3.5 (12 listopada 2026)
