@@ -43,7 +43,7 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.2.2** Zweryfikować reconnect, wielokrotne reload/unload i brak pozostawionych wątków MQTT.
 - [x] **9.2.3** Sprawdzić współbieżny dostęp do danych i bezpieczne przekazywanie aktualizacji do pętli HA.
 - [x] **9.2.4** Zweryfikować obsługę błędnych JSON, NaN, braków pomiarów i duplikatów urządzeń.
-- [ ] **9.2.5** Zbadać TLS, weryfikację certyfikatu oraz sposób obsługi danych uwierzytelniających. **Testy na prawdziwej pompie wykonane: ‘checkip’ wykazał niedopasowanie IP, a ‘verify_return_error’ wykazał niezaufany certyfikat wystawcy (depth=1, num=19). Test `-showcerts` potwierdził **2 przesłane certyfikaty**. Nadal trzeba sprawdzić rolę drugiego certyfikatu, niezależne zaufanie do wystawcy i model weryfikacji nazwy/IP; punkt pozostaje otwarty (P1).**
+- [ ] **9.2.5** Zbadać TLS, weryfikację certyfikatu oraz sposób obsługi danych uwierzytelniających. **Testy na prawdziwej pompie wykonane: ‘checkip’ wykazał niedopasowanie IP, a ‘verify_return_error’ wykazał niezaufany certyfikat wystawcy (depth=1, num=19). Test `-showcerts` potwierdził **2 przesłane certyfikaty**. Odczyt drugiego certyfikatu potwierdził samopodpisany Root CA z `CA:TRUE` (OwnTracks.org). Nadal brakuje niezależnego potwierdzenia autentyczności CA oraz bezpiecznego modelu weryfikacji nazwy/IP; punkt pozostaje otwarty (P1).**
 - [x] **9.2.6** Sprawdzić, czy logi nie ujawniają kluczy, haseł ani poufnych payloadów.
 - [x] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
 - [ ] **9.2.8** Każdą potrzebną poprawkę opatrzyć testem regresyjnym.
@@ -132,6 +132,7 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.2.5 — projekt diagnostyki | Opracowano polecenia do sprawdzenia IP, CA i liczby certyfikatów oraz bezpieczne opcje wdrożenia; nie zmieniano TLS w integracji | [Procedura TLS](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 | 2026-11-12 | 9.2.5 — dwa testy certyfikatu na sprzęcie | ‘checkip’: mismatch; ‘verify_return_error’: self-signed chain certificate na depth=1 (num=19). To osobne blokady; nie zmieniano połączenia ani produkcyjnego HA | [Wyniki i decyzje](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 | 2026-11-12 | 9.2.5 — liczba certyfikatów | Broker przesyła 2 certyfikaty PEM; zaplanowano odczyt publicznych danych drugiego oraz niezależne potwierdzenie CA. Zadanie pozostaje otwarte | [Procedura TLS](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
+| 2026-11-12 | 9.2.5 — weryfikacja drugiego certyfikatu | Subject=Issuer, `CA:TRUE`, nazwy zgodne z publicznym generatorem OwnTracks; to przesłanka metody wygenerowania, nie niezależne uwierzytelnienie CA. 9.2.5 pozostaje P1 | [Analiza](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 
 ## Kolejny ruch
 
