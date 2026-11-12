@@ -16,6 +16,7 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - Gałąź dokumentacji ETAPU 9: `feature/stage9-audit`.
 - Audyt i rejestr usterek: [ETAP_9_1_AUDYT_TECHNICZNY.md](ETAP_9_1_AUDYT_TECHNICZNY.md).
 - Raport zmian i otwartego ryzyka TLS: [ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md).
+- Diagnostyka certyfikatu i plan rozwiązań: [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 - Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
 - PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
 
@@ -42,7 +43,7 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.2.2** Zweryfikować reconnect, wielokrotne reload/unload i brak pozostawionych wątków MQTT.
 - [x] **9.2.3** Sprawdzić współbieżny dostęp do danych i bezpieczne przekazywanie aktualizacji do pętli HA.
 - [x] **9.2.4** Zweryfikować obsługę błędnych JSON, NaN, braków pomiarów i duplikatów urządzeń.
-- [ ] **9.2.5** Zbadać TLS, weryfikację certyfikatu oraz sposób obsługi danych uwierzytelniających. **Odczyt certyfikatu 2026-11-12 wykonany; wykryto mismatch SAN względem IP pompy, nadal brak zaufanego CA i weryfikacji konfiguracji — punkt pozostaje otwarty (P1).**
+- [ ] **9.2.5** Zbadać TLS, weryfikację certyfikatu oraz sposób obsługi danych uwierzytelniających. **Odczyt certyfikatu i analiza Paho/OpenSSL wykonane. Opracowano bezpieczny test checkip/łańcucha oraz warianty docelowego uwierzytelniania w osobnym dokumencie. Potrzebne wyniki testu sprzętowego i decyzja o zaufaniu certyfikatowi — punkt pozostaje otwarty (P1).**
 - [x] **9.2.6** Sprawdzić, czy logi nie ujawniają kluczy, haseł ani poufnych payloadów.
 - [x] **9.2.7** Potwierdzić blokowanie niezweryfikowanych komend EMS i brak niezamierzonego sterowania.
 - [ ] **9.2.8** Każdą potrzebną poprawkę opatrzyć testem regresyjnym.
@@ -128,6 +129,7 @@ Data aktualizacji: 2026-11-09. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-09 | 9.1.1–9.1.8 | Ukończony audyt statyczny, 15 ustaleń (P1/P2), bez zmian w kodzie produkcyjnym | [Raport](ETAP_9_1_AUDYT_TECHNICZNY.md) |
 | 2026-11-09 | 9.2.1–9.2.4, 9.2.6–9.2.7 | Zielone testy symulacyjne; 9.2.5 TLS i 9.2.8 końcowa regresja nadal otwarte | [Raport](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md), [CI 120/120 na każdą wersję](https://github.com/BudrysLP/EurosOS/actions/runs/42715633143) |
 | 2026-11-12 | 9.2.5 — diagnostyka certyfikatu | Potwierdzono poprawny odczyt X.509 i niedopasowanie adresu IP; pełna weryfikacja i strategia bezpiecznego TLS pozostają otwarte | [Raport](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md) |
+| 2026-11-12 | 9.2.5 — projekt diagnostyki | Opracowano polecenia do sprawdzenia IP, CA i liczby certyfikatów oraz bezpieczne opcje wdrożenia; nie zmieniano TLS w integracji | [Procedura TLS](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 
 ## Kolejny ruch
 
