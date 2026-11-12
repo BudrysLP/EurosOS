@@ -49,3 +49,6 @@ jobs:
 
       - name: Run tests without HA or MQTT broker
         run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Validate integration release ZIP (no release created)
+        run: python scripts/build_release_zip.py --output /tmp/euros_os.zip
