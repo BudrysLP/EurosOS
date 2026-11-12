@@ -452,5 +452,101 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.assertEqual(len(self.client.published), 1)
 
 
+    def test_two_configured_pumps_are_isolated_even_when_packets_mix(self):
+        other_loop = FakeLoop()
+        other = self.coordinator_module.EurosOSMQTTCoordinator(
+            "127.0.0.2", "other/Dev", pump_name="ATMO_1",
+            pump_type="FriskoATMO", event_loop=other_loop,
+        )
+        other.connect()
+        other_client = FakeClient.instances[-1]
+        atmo = {"Name": "ATMO_1", "Type": "FriskoATMO", "Data": {"TSM16": "32.4"}}
+        second_meter = {"Name": "METER_2", "Type": "METER",
+                        "Data": {"TOTAL_ACT_POW_FL_1": "0.22"}}
+        self.client.emit([self.geo(), self.meter()])
+        other_client.emit([second_meter, atmo])
+        self.assertEqual(self.coordinator.device["Name"], "GEO_1")
+        self.assertEqual(other.device["Name"], "ATMO_1")
+        self.assertEqual(set(self.coordinator.ems_meters), {"METER_1"})
+        self.assertEqual(set(other.ems_meters), {"METER_2"})
+        self.client.emit([atmo, second_meter])
+        other_client.emit([self.geo(), self.meter()])
+        self.assertEqual(set(self.coordinator.ems_meters), {"METER_1"})
+        self.assertEqual(set(other.ems_meters), {"METER_2"})
+        self.assertEqual(self.client.published, [])
+        self.assertEqual(other_client.published, [])
+        self.loop.flush()
+        other_loop.flush()
+        other.disconnect()
+        self.assertTrue(other._closed)
+
+    def test_multiple_meter_only_packets_merge_without_refreshing_pump(self):
+        self.client.emit([self.meter(), self.geo()])
+        original_pump = self.coordinator._last_update
+        meter2 = {"Name": "METER_2", "Type": "METER",
+                  "Data": {"TOTAL_ACT_POW_FL_1": "0.12"}}
+        meter3 = {"Name": "METER_3", "Type": "METER",
+                  "Data": {"TOTAL_ACT_POW_FL_1": "0.33"}}
+        self.client.emit([meter2, meter3])
+        self.assertEqual(set(self.coordinator.ems_meters),
+                         {"METER_1", "METER_2", "METER_3"})
+        self.assertEqual(self.coordinator._last_update, original_pump)
+        self.assertEqual(self.coordinator.ems_meters["METER_1"]
+                         ["TOTAL_ACT_POW_FL_1"], "0.168")
+        self.client.emit([meter2, meter3, meter3])
+        # Duplicate METER_3 is rejected, not silently overwritten.
+        self.assertEqual(self.coordinator.ems_meters["METER_3"]
+                         ["TOTAL_ACT_POW_FL_1"], "0.33")
+        self.assertEqual(self.coordinator._last_update, original_pump)
+        self.assertEqual(self.client.published, [])
+
+    def test_stale_cutoff_and_recovery_coalesce_worker_notifications(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.loop.flush()
+        t0 = self.coordinator._last_update
+        self.coordinator._meter_last_update["METER_1"] = t0
+        self.assertFalse(self.coordinator.check_stale(now=t0 + 60.0))
+        self.assertEqual(self.loop.pending, [])
+        self.assertTrue(self.coordinator.check_stale(now=t0 + 60.001))
+        self.assertEqual(len(self.loop.pending), 1)
+        self.assertFalse(self.coordinator.check_stale(now=t0 + 70))
+        self.loop.flush()
+        self.assertEqual(len(self.events), 2)
+        self.client.emit([self.meter("0.27")])
+        self.assertFalse(self.coordinator.check_stale(now=t0 + 1))
+        self.assertFalse(self.coordinator.pump_is_fresh(now=t0 + 61))
+        self.assertEqual(self.client.published, [])
+
+    def test_unload_drops_all_queued_worker_callbacks(self):
+        self.client.emit([self.geo(), self.meter()])
+        self.client.emit([self.geo(), self.meter("0.2")])
+        self.assertEqual(len(self.loop.pending), 2)
+        self.coordinator.disconnect()
+        self.loop.flush()
+        self.assertEqual(self.events, [])
+        self.client.emit([self.geo()])
+        self.assertEqual(self.loop.pending, [])
+        self.assertEqual(self.client.published, [])
+
+    def test_mqtt_command_uses_only_configured_pump_and_never_retains(self):
+        self.client.emit([self.geo()])
+        entry = {"device_model": "GEO_1", "device_type": "FriskoGEO",
+                 "device_version": "1"}
+        accepted = asyncio.run(
+            self.coordinator.async_set_device_value({"SPDHW_ZAD": 50}, entry)
+        )
+        self.assertTrue(accepted)
+        self.assertEqual(len(self.client.published), 1)
+        args, kwargs = self.client.published[0]
+        self.assertEqual(args[0], "test/App")
+        self.assertFalse(kwargs["retain"])
+        payload = json.loads(args[1])
+        self.assertEqual(payload["Devices"], [{
+            "Name": "GEO_1", "Data": {"SPDHW_ZAD": 50},
+            "Type": "FriskoGEO", "Version": "1",
+        }])
+        self.assertNotIn("METER_1", args[1])
+
+
 if __name__ == "__main__":
     unittest.main()
