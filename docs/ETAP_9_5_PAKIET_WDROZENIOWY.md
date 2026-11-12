@@ -37,7 +37,7 @@ Rozwojowa gałąź `feature/stage9-ha-validation` może się zmieniać wraz z do
 **Polecenia dopiero po ponownej kontroli gotowości skryptu i CI; nie wykonano ich jeszcze na HA**:
 
 ```sh
-curl -fLsS https://raw.githubusercontent.com/BudrysLP/EurosOS/BRANCH_OR_PINNED_PREP_COMMIT/scripts/prepare_ha_stage9_candidate.py \
+curl -fLsS https://raw.githubusercontent.com/BudrysLP/EurosOS/260ad5d6b9c1c6d7988745f4771406ffb0a02965/scripts/prepare_ha_stage9_candidate.py \
   -o /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py.new
 python3 -m py_compile /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py.new
 mv /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py.new \
@@ -47,7 +47,7 @@ python3 /config/euros_os_stage9_private/prepare_ha_stage9_candidate.py \
   --stage-root /config/euros_os_stage9_private
 ```
 
-**Nie używać dosłownie placeholdera `BRANCH_OR_PINNED_PREP_COMMIT`**. Instrukcja końcowa ma podać pełny hash commitu zawierającego skrypt po zielonym CI. Po stagingu zachować wynik w dokumentacji.
+**Skrypt stagingu przypięto do dokładnego commitu `260ad5d6b9c1c6d7988745f4771406ffb0a02965`, dla którego GitHub Actions przeszedł.** Odrębny commit z kodem integracji do wdrożenia to `07a49bccc0cb590f3179983156c706dbe4675189`. Po stagingu zachować sam wynik, nie załączać archiwów ani prywatnych plików.
 
 ## 4. Przed instalacją — bramki STOP
 
