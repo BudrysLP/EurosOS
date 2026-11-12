@@ -92,6 +92,22 @@ Niezmienione pozostały: `geo.py`, `ems.py`, `discovery.py` i dwa pliki tłumacz
 - Wyraźny sygnał rozpoczęcia testu w ustalonym oknie serwisowym i gotowość do rollbacku.
 - Ze względu na otwarty TLS P1 nie modyfikować sposobu uwierzytelniania brokera. Nie traktować tymczasowego testu jako zgody na publikację końcowego PR.
 
+## 4.1. Preflight operatora — wynik PASS
+
+Operator wykonał ostatnią kontrolę przed zamianą plików Euros OS i udokumentował wynik:
+
+```text
+PREFLIGHT: PASS
+Kandydat: 07a49bccc0cb
+LIVE/STAGE: 15/15
+Snapshot: 73 encje, 2 urządzenia
+Archiwum rollback: OK
+Wolne miejsce: 99248 MB
+HA: bez zmian, bez restartu
+```
+
+Sprawdzono manifest źródła, zgodność 15 ścieżek LIVE/STAGE, istnienie snapshotu rejestru oraz odczyt archiwum rollback. Wynik dopuszcza wyłącznie przeprowadzenie przygotowanej zamiany kodu w zatwierdzonym oknie; nie oznacza, że podmiana lub restart już nastąpiły.
+
 ## 5. Kryteria powdrożeniowe i rollback
 
 Po osobnym zatwierdzeniu faktycznej wymiany (NIE w tym kroku):
