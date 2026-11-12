@@ -50,6 +50,27 @@ Przed zmianą trzeba bezpiecznie ustalić wystawcę i nazwę certyfikatu brokera
 **Aktualizacja źródłowych API:** `ConfigEntryNotReady` jest zgodny z wytycznymi HA dotyczącymi urządzeń chwilowo offline: https://contributors.home-assistant.io/core/integrations/setup-failures/ ;
 `available` i zapisy stanów po push: https://contributors.home-assistant.io/core/entities/state-updates/ .
 
+## Uzupełnienie 2026-11-12 — odczyt certyfikatu serwera MQTT (zadanie 9.2.5)
+
+Użytkownik przeprowadził **wyłącznie odczytowy** test `openssl s_client` do lokalnego adresu używanego przez jego pompę na porcie 8883. Połączenie TLS przekazało certyfikat X.509:
+
+- Subject CN: `ee-agent`; organizacja `OwnTracks.org` (dane deklarowane przez certyfikat).
+- Issuer CN: `An MQTT broker`; organizacja `OwnTracks.org` (sam issuer nie dowodzi poprawności łańcucha zaufania).
+- `notBefore`: 2020-05-12 17:43:38 UTC.
+- `notAfter`: 2032-05-09 17:43:38 UTC; ważny czasowo w dniu 2026-11-12.
+- SAN: nazwy `ee-agent`, `localhost`; adres IPv4 w SAN jest **inny** od aktualnego adresu IP, pod którym użytkownik łączy się z pompą. Są też adresy lokalne / IPv6.
+- Wniosek: certyfikat **nie odpowiada nazwie docelowej weryfikowanej jako bieżący adres IP**. Włączenie `ssl.create_default_context()` i łączenie po tym adresie IP prawdopodobnie spowoduje błąd hostname/IP mismatch; dodatkowo nie mamy jeszcze dowodu zaufania do wystawcy.
+- Pozostaje **P1 otwarte**, a test odczytu certyfikatu nie zmienia kodu ani parametrów sterowania urządzeniem.
+- Kolejny **bezpieczny, read-only** test z terminala HA:
+  ```sh
+  openssl s_client -connect 192.168.1.17:8883 -showcerts </dev/null 2>/dev/null | openssl x509 -noout -checkip 192.168.1.17
+  ```
+  Polecenie pokazuje wynik weryfikacji dopasowania IP osobno od sprawdzenia zaufania łańcucha. **Nie zmieniać adresu IP pompy i nie importować niezaufanego certyfikatu CA.**
+- Następnie ocenić, czy broker przedstawia pełny łańcuch, czy możliwy jest bezpieczny trust anchor / poprawny hostname, lub czy konieczna byłaby kontrolowana zmiana certyfikatu po stronie urządzenia (wyłącznie z dokumentacją producenta i zgodą użytkownika). Nie włączać `tls_insecure_set(True)` jako pozornego rozwiązania.
+- Niezależnie należy zbadać odziedziczony model uwierzytelniania MQTT w `const.py` bez publikowania poświadczeń w logach lub PR.
+
+Źródła techniczne: https://docs.openssl.org/3.0/man1/openssl-x509/ ; https://docs.openssl.org/3.0/man1/openssl-s_client/ ; https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html
+
 ## Co dalej
 
 - Rozstrzygnąć 9.2.5: model certyfikatu TLS, bezpieczne warianty konfiguracji i kompatybilność.
