@@ -80,7 +80,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 ## 9.5 — Ostateczna kontrola na rzeczywistym HA (2/8; zabezpieczenia gotowe)
 
 - [x] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem. **Potwierdzone przez operatora 12.11.2026: pełna kopia HA 1,2 GB pobrana poza HA, obejmuje konfigurację i historię, klucz Emergency Kit dostępny; archiwum aktualnego katalogu Euros OS 66,5 KB sprawdzone odczytem `tar -tzf`, prawa 0600. Nie wykonywano próby pełnego odtworzenia — przed wdrożeniem ponownie potwierdzić aktualność kopii.**
-- [ ] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA.
+- [ ] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA. **Cztery kluczowe pliki obecnej integracji (`__init__.py`, `coordinator.py`, `sensor.py`, `manifest.json`) porównano SHA-256 z commitem ETAPU 8 `12d2502…` i są identyczne. Nadal wymagana kontrola pozostałych plików oraz zatwierdzenie zakresu i ewentualnego restartu.**
 - [ ] **9.5.3** Sprawdzić GEO_1, EMS Dom i dotychczasowe 73 encje po ewentualnych poprawkach. **12.11.2026 zapisano prywatny `before.json`: 73 encje i 2 urządzenia. Odczyt bazowy zaliczony; właściwy test porównawczy po wdrożeniu i weryfikacja odczytów GEO/EMS pozostają otwarte.**
 - [ ] **9.5.4** Sprawdzić bieżące aktualizacje oraz ciągłość historii energii przed i po restarcie.
 - [ ] **9.5.5** Zweryfikować zachowanie stale/unavailable i powrotu połączenia w sposób bezpieczny dla pompy.
@@ -151,6 +151,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.5 — udany prywatny snapshot | Operator potwierdził wynik `Private baseline saved: 73 entities, 2 devices.`; utworzono przedwdrożeniowy `before.json` w prywatnym folderze HA. Brak restartu, instalacji i testów powdrożeniowych; 9.5.3 pozostaje otwarty | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
 | 2026-11-12 | 9.5.1 – osobne archiwum integracji | Operator utworzył archiwum bieżącego `custom_components/euros_os` (66,5 KB), sprawdził `tar -tzf` i potwierdził uprawnienia `0600`; jeszcze nie zweryfikowano klucza odzyskiwania i kompletności pełnej kopii. Bez zmian HA | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
 | 2026-11-12 | 9.5.1 – zabezpieczenia potwierdzone | Operator potwierdził posiadanie Emergency Kit i pełnej kopii 1,2 GB obejmującej konfigurację oraz historię, pobranej na komputer. Archiwum integracji 66,5 KB i snapshot 73/2 już zapisane. 9.5.1 zamknięte na podstawie oświadczenia operatora, bez próby odtworzenia, restartu lub zmian w HA | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
+| 2026-11-12 | 9.5.2 — weryfikacja kodu | SHA-256 czterech plików zainstalowanych w HA zgodne z commitem ETAPU 8 `12d2502…`; do sprawdzenia pozostałe 11 plików i pliki dodatkowe. Bez wdrożenia i restartu; 9.5.2 nadal otwarte | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
 
 ## Kolejny ruch
 
