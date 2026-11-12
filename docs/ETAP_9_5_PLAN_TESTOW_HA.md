@@ -1,7 +1,7 @@
 # Euros OS — ETAP 9.5: plan bezpiecznej kontroli na rzeczywistym Home Assistant
 
 **Data planu:** 12 listopada 2026 r.  
-**Status:** PLAN i narzędzie porównawcze gotowe; **nie przeprowadzono nowego wdrożenia ani ponownego odczytu rejestrów produkcyjnego HA**.  
+**Status:** plan i narzędzie porównawcze gotowe; **12 listopada 2026 r. użytkownik potwierdził pierwszy udany odczyt bazowy rejestrów produkcyjnego HA: 73 encje, 2 urządzenia**. Nie wykonywano nowego wdrożenia, restartu ani porównania po aktualizacji.  
 **Gałąź przygotowania:** `feature/stage9-ha-validation`, na podstawie `feature/stage9-tests`.  
 **Zasada nadrzędna:** żadnego wgrywania plików, restartowania Home Assistant, wyłączania MQTT, zmieniania parametrów pompy ani modyfikowania rejestrów HA bez odrębnej, świadomej zgody operatora.
 
@@ -92,11 +92,25 @@ Po zielonym CI operator powinien ponownie pobrać poprawiony skrypt do tego same
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/entity_registry.py
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/device_registry.py
 
+## C.2. Udany odczyt bazowy 12 listopada 2026
+
+Po poprawce skryptu operator wykonał w terminalu Home Assistant:
+
+```sh
+python3 /config/euros_os_stage9_private/ha_registry_snapshot.py capture --config /config --output /config/euros_os_stage9_private/before.json
+```
+
+Potwierdzony komunikat: `Private baseline saved: 73 entities, 2 devices.`
+
+**Wniosek:** prywatny plik `before.json` został utworzony, a narzędzie odczytało 73 encje i 2 urządzenia oraz przeszło swoje podstawowe kontrole tożsamości rejestrowej. Nie odczytano pliku zdalnie i nie należy go kopiować do GitHub ani na czat. Komunikat nie potwierdza jeszcze zachowania tej tożsamości *po aktualizacji*, funkcjonowania wszystkich encji ani bieżącego SHA faktycznie zainstalowanej integracji.
+
+**Nie tworzyć drugiego `before.json` i nie nadpisywać istniejącego pliku.** Przed jakimkolwiek wdrożeniem pozostają do potwierdzenia: osobna aktualna kopia katalogu `euros_os`, dostęp do klucza odzyskiwania pełnego backupu, stan bieżącego kodu oraz decyzja operatora o zakresie testów. Żaden restart ani wdrożenie nie nastąpił przy tym odczycie.
+
 ## D. Scenariusze na rzeczywistym HA — do wykonania po zgodzie
 
 | Kod | Kroki | Kryterium zaliczenia | Status |
 | --- | --- | --- | --- |
-| HA9-01 | Przed zmianą: snapshot rejestru i wersja HA | 73/73 encje, 2 urządzenia, kopia prywatna, znany SHA aktualnego kodu | ⏳ NIE WYKONANO |
+| HA9-01 | Przed zmianą: snapshot rejestru i wersja HA | 73/73 encje, 2 urządzenia, kopia prywatna, znany SHA aktualnego kodu | **CZĘŚCIOWO:** snapshot 73/2 zapisany 12.11.2026. Do potwierdzenia aktualny SHA i kompletność kopii bezpieczeństwa |
 | HA9-02 | Po instalacji: setup GEO_1 i METER_1 | 2 urządzenia, 38+35 encji, żadnej zmiany ID, brak duplikatów | ⏳ NIE WYKONANO |
 | HA9-03 | Po instalacji: odczyty GEO | Temperatury, tryb, stany pomp, CWU i FW prawidłowe i dostępne, bez fikcyjnych zer | ⏳ NIE WYKONANO |
 | HA9-04 | Po instalacji: EMS Dom | Moc, import/eksport i 2 liczniki dzienne są aktualne, nie mieszają danych pompy i domu | ⏳ NIE WYKONANO |
