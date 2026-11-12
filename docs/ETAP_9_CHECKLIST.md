@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8); 9.5 W TOKU (2/8; zabezpieczenia i dokumentacja).
+Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8); 9.5 W TOKU (3/8; zatwierdzone okno i plan wdrożenia).
 
 ## Zasady
 
@@ -29,9 +29,9 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 
 ## Postęp
 
-- Ukończono: **32/69** zadań (46.4%).
+- Ukończono: **33/69** zadań (47.8%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS/P1 i regresja po zmianach; **9.3 (8/9)** — do kontroli rzeczywista aktualizacja Marketplace; **9.4 (8/8)** — komplet CI; **9.5 (2/8)** — zabezpieczenia 9.5.1 potwierdzone przez operatora (pełna kopia poza HA, klucz odzyskiwania, archiwum integracji), a 9.5.7 dokumentacja ograniczeń sprzętowych zamknięta. Otwarty zakres/okno testowe 9.5.2 oraz wdrożenie i testy produkcyjne.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS/P1 i regresja po zmianach; **9.3 (8/9)** — do kontroli rzeczywista aktualizacja Marketplace; **9.4 (8/8)** — komplet CI; **9.5 (3/8)** — zabezpieczenia 9.5.1 oraz dokumentacja 9.5.7 gotowe, operator rozpoczął okno serwisowe i zatwierdził wymianę kodu Euros OS oraz jeden zaplanowany restart HA Core (9.5.2). Wymiana plików i restart nadal niewykonane; najpierw kontrola preflight.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -78,10 +78,10 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.4.7** Przetestować blokady komend i zachowanie dotychczasowych kontrolek.
 - [x] **9.4.8** Uzyskać zielony wynik wszystkich wymaganych testów bez pominięć i udokumentować zakres.
 
-## 9.5 — Ostateczna kontrola na rzeczywistym HA (2/8; zabezpieczenia gotowe)
+## 9.5 — Ostateczna kontrola na rzeczywistym HA (3/8; zakres i okno zatwierdzone)
 
 - [x] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem. **Potwierdzone przez operatora 12.11.2026: pełna kopia HA 1,2 GB pobrana poza HA, obejmuje konfigurację i historię, klucz Emergency Kit dostępny; archiwum aktualnego katalogu Euros OS 66,5 KB sprawdzone odczytem `tar -tzf`, prawa 0600. Nie wykonywano próby pełnego odtworzenia — przed wdrożeniem ponownie potwierdzić aktualność kopii.**
-- [ ] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA. **Zakres zatwierdzony przez operatora: wymiana wyłącznie kodu Euros OS, jeden planowany restart Core, kontrola odczytowa GEO/EMS/73 encji, bez zmian MQTT/TLS i nastaw. Kandydat przypięty do `07a49bccc0cb590f3179983156c706dbe4675189`. Operator potwierdził udany staging 15/15 plików w prywatnym katalogu HA, bez instalacji i restartu. Zakończono porównanie LIVE 15 / STAGE 15: brakujące [], dodatkowe [], zmienione 10 plików; przeanalizowano wpływ zmian na MQTT, encje i sterowanie. Do zamknięcia: rozpoczęcie okna testowego i osobny sygnał do wdrożenia.**
+- [x] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA. **Zakres zatwierdzony przez operatora: wymiana wyłącznie kodu Euros OS, jeden planowany restart Core, kontrola odczytowa GEO/EMS/73 encji, bez zmian MQTT/TLS i nastaw. Kandydat przypięty do `07a49bccc0cb590f3179983156c706dbe4675189`. Operator potwierdził udany staging 15/15 plików w prywatnym katalogu HA, bez instalacji i restartu. Zakończono porównanie LIVE 15 / STAGE 15: brakujące [], dodatkowe [], zmienione 10 plików; przeanalizowano wpływ zmian na MQTT, encje i sterowanie. 12.11.2026 operator wyraźnie rozpoczął okno serwisowe i zatwierdził faktyczną wymianę plików oraz jeden zaplanowany restart Core. **To nie jest potwierdzenie, że wdrożenie wykonano**; wymagane preflight i kontrola po zmianach.**
 - [ ] **9.5.3** Sprawdzić GEO_1, EMS Dom i dotychczasowe 73 encje po ewentualnych poprawkach. **12.11.2026 zapisano prywatny `before.json`: 73 encje i 2 urządzenia. Odczyt bazowy zaliczony; właściwy test porównawczy po wdrożeniu i weryfikacja odczytów GEO/EMS pozostają otwarte.**
 - [ ] **9.5.4** Sprawdzić bieżące aktualizacje oraz ciągłość historii energii przed i po restarcie.
 - [ ] **9.5.5** Zweryfikować zachowanie stale/unavailable i powrotu połączenia w sposób bezpieczny dla pompy.
@@ -157,7 +157,8 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.5.2 — zatwierdzony zakres / staging | Operator zatwierdził zakres testu na żywym HA i maksymalnie jeden zaplanowany restart Core. Wybrano pełny SHA kandydata 07a49b…; narzędzie stagingu i testy bezpieczeństwa przygotowane na osobnej gałęzi, bez ingerencji w produkcyjny HA. Faktyczny start i wdrożenie nieautoryzowane | [Plan i bramki](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
 | 2026-11-12 | 9.5.2 — staging potwierdzony na HA | Operator uruchomił przypięty skrypt; wynik `STAGED ONLY: 15/15 verified integration files`, commit `07a49b…`; live integration unchanged, bez restartu. Nadal wymagane porównanie stage/live i uzgodnienie rozpoczęcia okna serwisowego | [Raport wdrożeniowy](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
 | 2026-11-12 | 9.5.2 — porównanie LIVE/STAGE | Operator potwierdził LIVE 15 / STAGE 15, brakujące [], dodatkowe [], zmienione 10 plików. Audyt diff wykazał nowe zachowania MQTT (watchdog, connect/retry, blokady nieświeżych komend) oraz zachowanie dotychczasowego nieweryfikowanego TLS. Gotowe do ustalenia okna, bez rozpoczęcia instalacji | [Audyt wdrożeniowy](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
+| 2026-11-12 | 9.5.2 — zgoda na start okna serwisowego | Operator zatwierdził rozpoczęcie okna, podmianę wyłącznie 15 plików Euros OS i jeden restart HA Core. Status: **preflight przed wdrożeniem**; żadnej podmiany/restartu jeszcze nie potwierdzono. TLS/sterowanie bez zmian | [Plan](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
 
 ## Kolejny ruch
 
-9.5.1 zabezpieczenia ukończone, HA9-01 (15/15 aktualnych plików i snapshot 73/2) ukończony. **Zakres 9.5.2 zatwierdzony**, przygotowano przypięty SHA kandydata i bezpieczny skrypt stagingu. Staging 15/15 i porównanie LIVE/STAGE (10 planowanych zmian plików, żadnych braków i dodatków) zakończone. Następny krok: **operator określa rozpoczęcie okna serwisowego i osobno zatwierdza faktyczną wymianę plików/restart Core**; dopiero po tym wykonać wdrożenie i testy. TLS 9.2.5/P1 i Marketplace 9.3.9 nadal otwarte.
+9.5.1 zabezpieczenia ukończone, HA9-01 (15/15 aktualnych plików i snapshot 73/2) ukończony. **Zakres 9.5.2 zatwierdzony**, przygotowano przypięty SHA kandydata i bezpieczny skrypt stagingu. Okno serwisowe rozpoczęte na polecenie operatora; podmiana kodu i jeden restart Core zatwierdzone. **Następnie wykonywać etapami: preflight, wymiana katalogu z lokalnym rollbackiem, restart, testy GEO/EMS i porównanie 73 encji.** Nie wykonywać dodatkowych restartów ani zmieniać TLS lub nastaw pompy bez nowej decyzji. TLS 9.2.5/P1 i Marketplace 9.3.9 nadal otwarte.
