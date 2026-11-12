@@ -40,6 +40,16 @@ openssl s_client -connect <IP_POMPY>:8883 -showcerts </dev/null 2>/dev/null | gr
 
 `-showcerts` pokazuje certyfikaty przesłane przez serwer; nie jest to dowód poprawności pełnego łańcucha.
 
+## Wyniki wykonanych testów — 12 listopada 2026 r.
+
+Wyniki pochodzą z terminala Home Assistant i zostały odczytane z publicznego certyfikatu serwera. Nie wykonywano żadnej zmiany na pompie ani publikacji MQTT.
+
+1. **Test A — wynik: NEGATYWNY.** `openssl x509 -checkip` zwrócił `IP 192.168.1.17 does NOT match certificate`. Fingerprint SHA-256 został odczytany i przekazany w rozmowie; nie publikujemy tutaj unikatowego odcisku sprzętu użytkownika.
+2. **Test B — wynik: NEGATYWNY.** `openssl s_client -verify_return_error -verify_ip` zwrócił `depth=1` i `verify error:num=19:self-signed certificate in certificate chain`, po czym handshake przerwano. To wskazuje na niezaufany certyfikat na poziomie wystawcy w łańcuchu; **nie** dowodzi, że sam certyfikat serwera jest samopodpisany. Ponieważ test zakończył się na błędzie zaufania, nie rozstrzyga niezależnie kolejnego sprawdzenia IP (to wykonał test A).
+3. **Test C — opcjonalny, jeszcze niewykonany.** Pozostaje do sprawdzenia, ile certyfikatów przesyła broker w ramach łańcucha i czy certyfikat CA może być niezależnie potwierdzony u producenta.
+4. **Wniosek:** standardowa ścieżka z zaufanym CA i dopasowaniem aktualnego IP nie przejdzie w obecnym stanie. Dwa osobne problemy: brak zaufania do lokalnego/root CA oraz niezgodność SAN z aktualnym adresem IP pompy. Nadal nie mamy niezależnie uwierzytelnionej CA ani modelu odnowy certyfikatu.
+5. **Decyzja:** nie przełączać działającego Home Assistant na ścisły TLS, nie podmieniać adresu IP, nie wyłączać zabezpieczeń w systemie operacyjnym i nie implementować pinningu na podstawie jednorazowego odczytu z niezaufanego połączenia. Zadanie 9.2.5 pozostaje **P1 / otwarte**.
+
 ## Decyzje projektowe — bez dokonywania zmian w pompie
 
 1. **Preferowane, jeśli wspierane przez producenta:** serwer przedstawia certyfikat ważny dla faktycznej nazwy/IP urządzenia, podpisany przez zaufaną CA (publiczną lub bezpiecznie dostarczoną własną). Wtedy `ssl.create_default_context()`, `CERT_REQUIRED` i sprawdzanie nazwy.
@@ -52,7 +62,8 @@ openssl s_client -connect <IP_POMPY>:8883 -showcerts </dev/null 2>/dev/null | gr
 
 - [x] Ustalono, że certyfikat ma SAN niepasujący do bieżącego IP i jest czasowo ważny.
 - [x] Potwierdzono w kodzie i dokumentacji Paho, że połączenie nie weryfikuje zaufania.
-- [ ] Zebrano wynik `checkip` (A), diagnozę łańcucha (B) i opcjonalnie liczbę certyfikatów (C).
+- [x] Zebrano wynik `checkip` (A) i diagnozę łańcucha (B), oba negatywne.
+- [ ] Opcjonalny odczyt liczby certyfikatów (C) i niezależna weryfikacja wystawcy.
 - [ ] Udokumentowano ostateczne ograniczenia i wybrany model wdrożenia, kompatybilny z realnym urządzeniem i innymi modelami Euros OS.
 - [ ] Zweryfikowano docelową implementację i regresję albo formalnie uznano nierozwiązany problem za **blokadę wydania**.
 
