@@ -17,6 +17,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - Audyt i rejestr usterek: [ETAP_9_1_AUDYT_TECHNICZNY.md](ETAP_9_1_AUDYT_TECHNICZNY.md).
 - Raport zmian i otwartego ryzyka TLS: [ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md](ETAP_9_2_NIEZAWODNOSC_BEZPIECZENSTWO.md).
 - Audyt zgodności i CI Python 3.14: [ETAP_9_3_KOMPATYBILNOSC.md](ETAP_9_3_KOMPATYBILNOSC.md).
+- Preflight HACS / Marketplace i procedura aktualizacji: [ETAP_9_3_MARKETPLACE.md](ETAP_9_3_MARKETPLACE.md).
 - Diagnostyka certyfikatu i plan rozwiązań: [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 - Wynik CI 94/94 Python 3.12 + 94/94 Python 3.13: https://github.com/BudrysLP/EurosOS/actions/runs/42687735935 .
 - PR #3: https://github.com/McKoPcIu/EurosOS/pull/3 (otwarty); PR #4: https://github.com/McKoPcIu/EurosOS/pull/4 (zamknięty).
@@ -59,7 +60,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.3.6** Sprawdzić zachowanie METER_1 i dodatkowych METER_N, bez fikcyjnych liczników.
 - [x] **9.3.7** Sprawdzić odtwarzanie liczników dziennych, północ, zmianę dnia i przerwy w danych.
 - [ ] **9.3.8** Zweryfikować kompatybilność z Pythonem 3.14 i Home Assistant Core 2026.11. **Python 3.14.10: 125/125 zielonych testów; końcowe sprawdzenie nowej gałęzi w HA Core 2026.11 jeszcze do wykonania.**
-- [ ] **9.3.9** Zweryfikować manifest, metadane HACS, instalację oraz ścieżkę aktualizacji bez utraty encji. **Potwierdzono archiwa ZIP w wydaniach upstream, lecz minimum HA 2021.12.0 i aktualizację nowej wersji przez Marketplace trzeba zweryfikować.**
+- [ ] **9.3.9** Zweryfikować manifest, metadane HACS, instalację oraz ścieżkę aktualizacji bez utraty encji. **Preflight ZIP zakończony: utworzono generator, 3 testy pakowania, a CI 137/137 ×3 poprawnie buduje płaski euros_os.zip (15 plików). Nadal otwarte: rzeczywista aktualizacja w Marketplace i zgodność minimum HA (hacs.json 2021.12 vs README 2023.3) oraz decyzja autora o wersji wydania.**
 
 ## 9.4 — Rozszerzenie testów automatycznych (0/8)
 
@@ -136,6 +137,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.2.5 — weryfikacja drugiego certyfikatu | Subject=Issuer, `CA:TRUE`, nazwy zgodne z publicznym generatorem OwnTracks; to przesłanka metody wygenerowania, nie niezależne uwierzytelnienie CA. 9.2.5 pozostaje P1 | [Analiza](ETAP_9_2_TLS_DIAGNOSTYKA.md) |
 | 2026-11-12 | 9.3.1–9.3.3, 9.3.6–9.3.7 | Rozpoznawanie pomp, porządek MQTT, stałość identyfikatorów, METER_N i restart/dobowe liczniki zaliczone w symulacjach. Python 3.14.10 CI zielony, natywne sensory poprawione, 4 punkty 9.3 nadal otwarte | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 125/125 x3](https://github.com/BudrysLP/EurosOS/actions/runs/43201747083) |
 | 2026-11-12 | 9.3.5 | Poprawiono szacowanie energii pompy: bez efektów ubocznych odczytu, RestoreSensor, obsługa luk MQTT i trwały unique_id. Skorygowano klasy RPM i PWM%. Potwierdzono metadane zgodne ze schematem Energy; test w rzeczywistym HA przeniesiony do 9.5. | [Raport](ETAP_9_3_KOMPATYBILNOSC.md), [CI 134/134 ×3](https://github.com/BudrysLP/EurosOS/actions/runs/43204946143) |
+| 2026-11-12 | 9.3.9 — preflight pakowania | Zbudowano i zweryfikowano w CI ZIP z 15 plikami integracji oraz kompletność metadanych; wykryto rozbieżność minimalnej HA i wersji wydania. Rzeczywista instalacja Marketplace nie została wykonana; zadanie nadal otwarte | [Raport](ETAP_9_3_MARKETPLACE.md), [CI 137/137 ×3 + ZIP](https://github.com/BudrysLP/EurosOS/actions/runs/43209612693) |
 
 ## Kolejny ruch
 
