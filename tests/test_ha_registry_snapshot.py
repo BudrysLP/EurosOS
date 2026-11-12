@@ -18,7 +18,7 @@ tool = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(tool)
 
 
-def write_storage(config: Path, *, count=73, devices=2):
+def write_storage(config: Path, *, count=73, devices=2, legacy=False):
     storage = config / ".storage"
     storage.mkdir(parents=True)
     external_entry = {"entry_id": "other-id", "domain": "unrelated",
@@ -32,7 +32,7 @@ def write_storage(config: Path, *, count=73, devices=2):
     for index in range(count):
         domain = "sensor" if index < 50 else "number"
         rows.append({
-            "domain": domain,
+            **({"domain": domain} if legacy else {}),
             "platform": "euros_os",
             "unique_id": f"model_{index % 69}",
             "entity_id": f"{domain}.euros_os_fixture_{index}",
@@ -45,14 +45,18 @@ def write_storage(config: Path, *, count=73, devices=2):
         "unique_id": "foreign", "entity_id": "sensor.other",
         "config_entry_id": "other-id", "device_id": None,
     })
+    ownership = (
+        {"config_entries": ["euros-entry"]}
+        if legacy else {"config_entry_id": "euros-entry"}
+    )
     device_records = [{
         "id": "pump-id", "via_device_id": None,
-        "config_entries": ["euros-entry"], "identifiers": [["euros_os", "private"]]
+        **ownership, "identifiers": [["euros_os", "private"]]
     }]
     if devices == 2:
         device_records.append({
             "id": "meter-id", "via_device_id": "pump-id",
-            "config_entries": ["euros-entry"], "name": "private friendly name",
+            **ownership, "name": "private friendly name",
         })
     for filename, field, records in (
         ("core.config_entries", "entries", entries),
@@ -84,6 +88,45 @@ class Stage9RegistrySafetyTests(unittest.TestCase):
             len({(e["domain"], e["platform"], e["unique_id"])
                  for e in result["entities"]}), 73
         )
+
+    def test_matches_real_ha_2026_11_persisted_schema(self):
+        registry = json.loads(
+            (self.config / ".storage" / "core.entity_registry").read_text()
+        )
+        self.assertNotIn("domain", registry["data"]["entities"][0])
+        devices = json.loads(
+            (self.config / ".storage" / "core.device_registry").read_text()
+        )
+        self.assertEqual(devices["data"]["devices"][0]["config_entry_id"], "euros-entry")
+        self.assertNotIn("config_entries", devices["data"]["devices"][0])
+        snapshot = tool.capture(self.config)
+        self.assertEqual(snapshot["entities"][0]["domain"], "number")
+        self.assertEqual(len(snapshot["entities"]), 73)
+        self.assertEqual(len(snapshot["devices"]), 2)
+
+    def test_legacy_ha_storage_schema_remains_supported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            old_config = Path(directory)
+            write_storage(old_config, legacy=True)
+            snapshot = tool.capture(old_config)
+            self.assertEqual(len(snapshot["entities"]), 73)
+            self.assertEqual(len(snapshot["devices"]), 2)
+
+    def test_rejects_conflicting_optional_domain(self):
+        file = self.config / ".storage" / "core.entity_registry"
+        registry = json.loads(file.read_text())
+        registry["data"]["entities"][0]["domain"] = "switch"
+        file.write_text(json.dumps(registry))
+        with self.assertRaisesRegex(ValueError, "conflicting domain"):
+            tool.capture(self.config)
+
+    def test_rejects_unknown_device_ownership_schema(self):
+        file = self.config / ".storage" / "core.device_registry"
+        registry = json.loads(file.read_text())
+        registry["data"]["devices"][0].pop("config_entry_id")
+        file.write_text(json.dumps(registry))
+        with self.assertRaisesRegex(ValueError, "Unsupported device config entry"):
+            tool.capture(self.config)
 
     def test_compare_same_snapshot_passes(self):
         before = tool.capture(self.config)
