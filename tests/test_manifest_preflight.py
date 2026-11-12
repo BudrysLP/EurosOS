@@ -40,6 +40,17 @@ class ManifestPreflightTests(unittest.TestCase):
         self.assertTrue(self.manifest["config_flow"])
         self.assertTrue(self.manifest["documentation"].startswith("https://"))
 
+    def test_push_telemetry_is_declared_consistently(self):
+        hacs = json.loads(
+            (ROOT / "hacs.json").read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_keys,
+        )
+        self.assertEqual(self.manifest["iot_class"], "local_push")
+        self.assertEqual(hacs["iot_class"], self.manifest["iot_class"])
+        self.assertEqual(hacs["domain"], self.manifest["domain"])
+        self.assertEqual(hacs["filename"], "euros_os.zip")
+        self.assertTrue(hacs["zip_release"])
+
     def test_expected_integration_files_present(self):
         for name in (
             "__init__.py", "coordinator.py", "config_flow.py",
