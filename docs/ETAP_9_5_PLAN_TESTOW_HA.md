@@ -17,9 +17,9 @@
 
 **9.5.1 — Kopie zapasowe / CZĘŚCIOWO POTWIERDZONE 12.11.2026**
 
-Na podstawie zrzutu ekranu Home Assistant użytkownik potwierdził, że na liście automatycznych backupów widoczne są **trzy** kopie, w tym najnowsza „Automatic backup 2026.11.1”, **1,2 GB**, oznaczona jako utworzona „2 minuty temu” w chwili zrzutu; starsze to „Automatic backup 2026.11.1” (1,15 GB, „9 godzin temu”) i „Automatic backup 2026.11.0” (1,13 GB, „wczoraj”). Zrzut potwierdza istnienie *wpisów* i wyświetlane rozmiary, nie potwierdza kompletności, możliwości odtworzenia, pobrania kopii na komputer ani posiadania klucza szyfrowania.
+Na podstawie zrzutu ekranu Home Assistant użytkownik potwierdził, że na liście automatycznych backupów widoczne są **trzy** kopie, w tym najnowsza „Automatic backup 2026.11.1”, **1,2 GB**, oznaczona jako utworzona „2 minuty temu” w chwili zrzutu; starsze to „Automatic backup 2026.11.1” (1,15 GB, „9 godzin temu”) i „Automatic backup 2026.11.0” (1,13 GB, „wczoraj”). Zrzut potwierdza istnienie *wpisów* i wyświetlane rozmiary. Użytkownik następnie potwierdził pobranie najnowszej kopii na komputer. Nie zostały niezależnie zweryfikowane jej kompletność, możliwość odtworzenia, dostęp do klucza szyfrowania ani osobna bieżąca kopia integracji.
 
-**Do zamknięcia 9.5.1 nadal wymagane**: sprawdzenie zakresu i stanu najnowszego backupu (czy obejmuje konfigurację i Recorder), prywatna kopia na urządzeniu poza HA, dostęp do emergency kit, osobna kopia obecnego folderu `/config/custom_components/euros_os` i potwierdzenie jej niezerowego rozmiaru. Zrzut nie stanowi zgody na instalację, restart ani modyfikację konfiguracji.
+**Do zamknięcia 9.5.1 nadal wymagane**: sprawdzenie zakresu i stanu najnowszego backupu (czy obejmuje konfigurację i Recorder), **pobranie kopii poza HA — potwierdzone przez operatora**, dostęp do emergency kit, osobna kopia obecnego folderu `/config/custom_components/euros_os` i potwierdzenie jej niezerowego rozmiaru. Zrzut nie stanowi zgody na instalację, restart ani modyfikację konfiguracji.
 
 
 
