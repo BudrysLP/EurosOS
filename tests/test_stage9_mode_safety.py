@@ -167,5 +167,66 @@ class ModeSafetyTests(unittest.TestCase):
         self.assertEqual(self.sent, [])
 
 
+    def test_unknown_geo_mode_option_never_publishes(self):
+        with self.assertRaises(HaError):
+            asyncio.run(self.mode.async_select_option("NOT_A_MODE"))
+        self.assertEqual(self.sent, [])
+        # Missing status must not be misrepresented as AUTO.
+        self.coordinator.device["Data"]["U_ENE_TAR"] = "unknown"
+        self.assertIsNone(self.mode.current_option)
+        self.assertEqual(self.sent, [])
+
+    def test_valid_auto_control_preserves_existing_legacy_flags(self):
+        self.coordinator.device["Data"]["U_ENE_TAR"] = 0
+        asyncio.run(self.mode.async_select_option("AUTO"))
+        self.assertEqual(self.sent, [{
+            "SBF_OOF": 1, "SXF_AWA": 0, "SXF_ECO": 0, "SXF_TIME": 0
+        }])
+        self.assertNotIn("U_ENE_TAR", self.sent[0])
+
+    def test_cwu_turbo_valid_flags_and_turn_off_are_not_repurposed(self):
+        self.coordinator.device["Data"].update({
+            "SBF_DHS": 1, "SBF_DHX": 1, "SBF_OOF": 1,
+            "SXF_ANL": 0, "SBF_PHT": 0,
+        })
+        self.switch.async_write_ha_state = lambda: None
+        asyncio.run(self.switch.async_turn_on())
+        self.assertEqual(self.sent, [{"SWEXT_T_CWU": 1}])
+        self.assertTrue(self.switch.is_on)
+        asyncio.run(self.switch.async_turn_off())
+        self.assertEqual(self.sent, [
+            {"SWEXT_T_CWU": 1}, {"SWEXT_T_CWU": 0}
+        ])
+        self.assertFalse(self.switch.is_on)
+
+    def test_cwu_turbo_forbidden_conditions_fail_closed(self):
+        good = {"SBF_DHS": 1, "SBF_DHX": 1, "SBF_OOF": 1,
+                "SXF_ANL": 0, "SBF_PHT": 0}
+        for change in (
+            {"SBF_DHS": 0},
+            {"SBF_DHX": 0},
+            {"SBF_OOF": 0},
+            {"SXF_ANL": 1, "SBF_PHT": 1},
+        ):
+            with self.subTest(change=change):
+                self.coordinator.device["Data"].update({**good, **change})
+                with self.assertRaises(HaError):
+                    asyncio.run(self.switch.async_turn_on())
+        self.assertEqual(self.sent, [])
+
+    def test_rejected_command_does_not_optimistically_change_switch(self):
+        async def fail_to_publish(payload, entry_data):
+            return False
+        self.coordinator.async_set_device_value = fail_to_publish
+        self.switch._is_on = False
+        self.coordinator.device["Data"].update({
+            "SBF_DHS": 1, "SBF_DHX": 1, "SBF_OOF": 1,
+            "SXF_ANL": 0, "SBF_PHT": 0,
+        })
+        asyncio.run(self.switch.async_turn_on())
+        self.assertFalse(self.switch.is_on)
+        self.assertEqual(self.sent, [])
+
+
 if __name__ == "__main__":
     unittest.main()
