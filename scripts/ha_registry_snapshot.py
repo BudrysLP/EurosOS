@@ -57,11 +57,22 @@ def capture(config: Path, *, domain: str = "euros_os") -> dict:
     for row in all_entities:
         if row.get("config_entry_id") not in entry_ids:
             continue
+        entity_id = row.get("entity_id")
+        # HA Core 2026.11 does NOT persist a separate 'domain' field in
+        # core.entity_registry. RegistryEntry derives it from entity_id.
+        if not isinstance(entity_id, str) or "." not in entity_id:
+            raise ValueError("An Euros OS entity has an invalid entity_id")
+        entity_domain, entity_name = entity_id.split(".", 1)
+        if not entity_domain or not entity_name:
+            raise ValueError("An Euros OS entity has an invalid entity_id")
+        stored_domain = row.get("domain")
+        if stored_domain is not None and stored_domain != entity_domain:
+            raise ValueError("An Euros OS entity has a conflicting domain")
         item = {
-            "domain": row.get("domain"),
+            "domain": entity_domain,
             "platform": row.get("platform"),
             "unique_id": row.get("unique_id"),
-            "entity_id": row.get("entity_id"),
+            "entity_id": entity_id,
             "device_id": row.get("device_id"),
         }
         if not all(isinstance(item[key], str) and item[key]
@@ -73,9 +84,21 @@ def capture(config: Path, *, domain: str = "euros_os") -> dict:
 
     devices = []
     for row in all_devices:
-        linked = row.get("config_entries", [])
-        if not isinstance(linked, list):
-            raise ValueError("Unexpected device registry config_entries format")
+        # HA Core 2026.11 stores one owning config_entry_id per device.
+        # Older HA releases stored the list 'config_entries'; accept both
+        # formats but never guess if neither is well-formed.
+        if "config_entry_id" in row:
+            owner = row["config_entry_id"]
+            if owner is not None and not isinstance(owner, str):
+                raise ValueError("Unexpected device config_entry_id format")
+            linked = {owner} if owner is not None else set()
+        else:
+            legacy_linked = row.get("config_entries")
+            if not isinstance(legacy_linked, list) or not all(
+                isinstance(value, str) for value in legacy_linked
+            ):
+                raise ValueError("Unsupported device config entry storage format")
+            linked = set(legacy_linked)
         if not entry_ids.intersection(linked):
             continue
         device_id = row.get("id")
