@@ -120,7 +120,7 @@ Użytkownik wykonał **read-only porównanie SHA-256** 4 kluczowych plików obec
 | `sensor.py` | **SHA-256 zgodny** |
 | `manifest.json` | **SHA-256 zgodny** |
 
-Wniosek: zawartość wszystkich czterech plików jest identyczna bajt po bajcie z ETAPEM 8. Nie dowodzi to jeszcze zgodności **całego** katalogu integracji (commit zawiera 15 plików), dlatego HA9-01 i 9.5.2 nadal są otwarte. Przed wdrożeniem należy porównać pozostałe pliki i wykryć nieoczekiwane nadmiarowe pliki, ignorując jedynie artefakty `__pycache__`.
+Wniosek z pierwszej kontroli: wszystkie cztery wskazane pliki były identyczne bajt po bajcie z ETAPEM 8. **Kontrolę rozszerzono na cały katalog**: użytkownik odczytał archiwum commitu `12d2502091d2364e7cb1803eef3bd523a31618de` i porównał każdą z 15 zawartości plików z `/config/custom_components/euros_os`. Wynik: **15/15 zgodnych; brakujące: []; zmienione: []; dodatkowe: []** (z pominięciem generowanych `__pycache__` i plików `.pyc`). To potwierdza zgodność całej *źródłowej zawartości integracji* z commitem ETAPU 8, a nie tylko czterech plików. Nie stanowi jeszcze zezwolenia na aktualizację ani dowodu poprawności wersji rozwojowej. **HA9-01 zaliczono; 9.5.2 (zakres i okno serwisowe) pozostaje otwarty.**
 
 Nie wprowadzono zmian ani nie restartowano HA, nie zlecając jeszcze aktualizacji.
 
@@ -128,7 +128,7 @@ Nie wprowadzono zmian ani nie restartowano HA, nie zlecając jeszcze aktualizacj
 
 | Kod | Kroki | Kryterium zaliczenia | Status |
 | --- | --- | --- | --- |
-| HA9-01 | Przed zmianą: snapshot rejestru i wersja HA | 73/73 encje, 2 urządzenia, kopia prywatna, znany SHA aktualnego kodu | **CZĘŚCIOWO:** snapshot 73/2 i zabezpieczenia 9.5.1 potwierdzone, nadal należy potwierdzić SHA faktycznie zainstalowanego kodu |
+| HA9-01 | Przed zmianą: snapshot rejestru i wersja HA | 73/73 encje, 2 urządzenia, kopia prywatna, znany SHA aktualnego kodu | **ZALICZONE:** snapshot 73/2, zabezpieczenia 9.5.1 i porównanie 15/15 plików z commitem `12d2502091d2364e7cb1803eef3bd523a31618de`. Nadal wymagana osobna zgoda na wdrożenie |
 | HA9-02 | Po instalacji: setup GEO_1 i METER_1 | 2 urządzenia, 38+35 encji, żadnej zmiany ID, brak duplikatów | ⏳ NIE WYKONANO |
 | HA9-03 | Po instalacji: odczyty GEO | Temperatury, tryb, stany pomp, CWU i FW prawidłowe i dostępne, bez fikcyjnych zer | ⏳ NIE WYKONANO |
 | HA9-04 | Po instalacji: EMS Dom | Moc, import/eksport i 2 liczniki dzienne są aktualne, nie mieszają danych pompy i domu | ⏳ NIE WYKONANO |
