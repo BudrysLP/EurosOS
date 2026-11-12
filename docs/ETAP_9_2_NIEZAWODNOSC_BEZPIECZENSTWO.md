@@ -71,6 +71,15 @@ Użytkownik przeprowadził **wyłącznie odczytowy** test `openssl s_client` do 
 
 Źródła techniczne: https://docs.openssl.org/3.0/man1/openssl-x509/ ; https://docs.openssl.org/3.0/man1/openssl-s_client/ ; https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html
 
+## Uzupełnienie 2026-11-12 — plan bezpiecznego zamknięcia TLS
+
+Przygotowano osobny, publicznie bezpieczny dokument z poleceniami do odczytu dopasowania IP certyfikatu, próby walidacji łańcucha oraz z wariantami naprawy:
+[ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
+
+Weryfikacja zaufania wystawcy i dopasowania adresu to **dwa odrębne warunki**. Sam CAfile lub DNS alias nie rozwiązuje automatycznie obu problemów. Konfiguracja oparta na certyfikacie CA wymaga również sprawdzenia poprawności SAN/hostname. Funkcja `ssl._create_unverified_context()` pozostaje na razie w obu punktach połączenia ze względów kompatybilności, ale blokada P1 nadal obowiązuje.
+
+Plan pozostaje wyłącznie diagnostyczny, bez zmian w Home Assistant i bez MQTT PUBLISH.
+
 ## Co dalej
 
 - Rozstrzygnąć 9.2.5: model certyfikatu TLS, bezpieczne warianty konfiguracji i kompatybilność.
