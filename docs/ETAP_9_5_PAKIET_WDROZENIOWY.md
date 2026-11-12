@@ -64,6 +64,25 @@ Różnica między ścieżką wskazaną jako `/config` i wypisaną jako `/homeass
 
 **Zaliczone: weryfikacja 15 blobów Git oraz zapis osobnego katalogu stagingu.** Nie potwierdzono jeszcze porównania zmian pomiędzy nową a żywą integracją po stagingu ani sygnału rozpoczęcia okna serwisowego. Instalacja/restart pozostają niewykonane.
 
+## 3.2. Porównanie LIVE / STAGE i przegląd zmian — 12 listopada 2026
+
+Operator wykonał odczytowe porównanie plików w `/config/custom_components/euros_os` i prywatnym stagingu `/config/euros_os_stage9_private/stage9_candidate_07a49bccc0cb/euros_os`. Wynik: **LIVE 15, STAGE 15, brakujące [], dodatkowe [], zmienione 10 plików**:
+
+`__init__.py`, `binary_sensor.py`, `config_flow.py`, `const.py`, `coordinator.py`, `manifest.json`, `number.py`, `select.py`, `sensor.py`, `switch.py`.
+
+Niezmienione pozostały: `geo.py`, `ems.py`, `discovery.py` i dwa pliki tłumaczeń. Porównanie z repozytorium GitHub potwierdziło te same 10 modyfikacji pomiędzy pełnymi SHA produkcji i kandydata.
+
+**Audyt wpływu na działanie:**
+
+- `coordinator.py` i `__init__.py`: dodany watchdog świeżości MQTT co 10 s, obsługa błędnego połączenia jako `ConfigEntryNotReady`, wywołanie stanu niedostępnego przy ciszy brokera, dodatkowe zabezpieczenia publikacji poleceń. **To realne zmiany zachowania** — po instalacji konieczna jest obserwacja logów, odczytów i zachowania połączenia.
+- Połączenie TLS: w kodzie pozostaje `client.tls_set_context(ssl._create_unverified_context())`. Nie włączamy w tym etapie walidacji CA ani nazwy/IP. **Punkt 9.2.5 pozostaje otwartym ryzykiem bezpieczeństwa P1**; staging nie rozwiązuje jego przyczyny.
+- `sensor.py`, `const.py`: migracja do natywnego API sensorów HA, naprawa klasy jednostek i osobny `RestoreSensor` dla starszego szacowania energii. GEO i rzeczywiste liczniki EMS zachowują identyfikatory; wymagają potwierdzenia historii w żywym HA.
+- `number.py`, `select.py`, `switch.py`, `binary_sensor.py`: dostępność zależna od świeżości pompy, bezpieczniejsze warunki sterowania; `number.py` rozpoznaje tryb EMS w GEO.
+- `config_flow.py`: zmiana treści komunikatów diagnostycznych, bez zmiany ustawień brokera. `manifest.json`: `iot_class` z `local_polling` na `local_push`; `version=0.1.0` nadal bez zmiany.
+- Nie stwierdzono nowego mechanizmu ingerującego w certyfikat pompy lub ustawienia MQTT; nie jest to jednak gwarancja poprawnej komunikacji po rzeczywistym restarcie.
+
+**Wniosek:** porównanie LIVE/STAGE zaliczone jako bramka przygotowania, ale nie stanowi testu działania. Przed instalacją konieczny jest jednoznaczny sygnał operatora o rozpoczęciu okna serwisowego. Gdy po restarcie wystąpią błędy połączenia, `unavailable`, nieoczekiwane problemy z encjami lub licznikiem energii, należy zatrzymać test i rozważyć rollback.
+
 ## 4. Przed instalacją — bramki STOP
 
 - Prywatny `before.json` ma 73 encje, 2 urządzenia; użytkownik potwierdził jego utworzenie 12.11.2026.
