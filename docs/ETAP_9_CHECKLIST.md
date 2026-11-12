@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8); 9.5 W TOKU (1/8, wyłącznie dokumentacja).
+Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8); 9.5 W TOKU (2/8; zabezpieczenia i dokumentacja).
 
 ## Zasady
 
@@ -28,9 +28,9 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 
 ## Postęp
 
-- Ukończono: **31/69** zadań (44.9%).
+- Ukończono: **32/69** zadań (46.4%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS/P1 i regresja po zmianach; **9.3 (8/9)** — do kontroli rzeczywista aktualizacja Marketplace; **9.4 (8/8)** — komplet CI; **9.5 (1/8)** — przygotowano plan i narzędzie prywatnego porównania 73 encji, odhaczono tylko 9.5.7 (lista ograniczeń sprzętowych). Backup, zgoda, wdrożenie i testy fizycznego HA nadal otwarte.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS/P1 i regresja po zmianach; **9.3 (8/9)** — do kontroli rzeczywista aktualizacja Marketplace; **9.4 (8/8)** — komplet CI; **9.5 (2/8)** — zabezpieczenia 9.5.1 potwierdzone przez operatora (pełna kopia poza HA, klucz odzyskiwania, archiwum integracji), a 9.5.7 dokumentacja ograniczeń sprzętowych zamknięta. Otwarty zakres/okno testowe 9.5.2 oraz wdrożenie i testy produkcyjne.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -77,9 +77,9 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.4.7** Przetestować blokady komend i zachowanie dotychczasowych kontrolek.
 - [x] **9.4.8** Uzyskać zielony wynik wszystkich wymaganych testów bez pominięć i udokumentować zakres.
 
-## 9.5 — Ostateczna kontrola na rzeczywistym HA (1/8; tylko dokumentacja)
+## 9.5 — Ostateczna kontrola na rzeczywistym HA (2/8; zabezpieczenia gotowe)
 
-- [ ] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem. **Zrzut HA 12.11.2026: 3 automatyczne kopie; najnowsza 1,2 GB, pobrana na komputer według operatora. Osobne archiwum bieżącej integracji `euros_os_before_stage9_20261112.tar.gz` (66,5 KB) utworzone i sprawdzone poleceniem `tar -tzf`, uprawnienia `0600`. Do potwierdzenia: klucz odzyskiwania i kompletność/przywracalność pełnego backupu. Punkt pozostaje otwarty.**
+- [x] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem. **Potwierdzone przez operatora 12.11.2026: pełna kopia HA 1,2 GB pobrana poza HA, obejmuje konfigurację i historię, klucz Emergency Kit dostępny; archiwum aktualnego katalogu Euros OS 66,5 KB sprawdzone odczytem `tar -tzf`, prawa 0600. Nie wykonywano próby pełnego odtworzenia — przed wdrożeniem ponownie potwierdzić aktualność kopii.**
 - [ ] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA.
 - [ ] **9.5.3** Sprawdzić GEO_1, EMS Dom i dotychczasowe 73 encje po ewentualnych poprawkach. **12.11.2026 zapisano prywatny `before.json`: 73 encje i 2 urządzenia. Odczyt bazowy zaliczony; właściwy test porównawczy po wdrożeniu i weryfikacja odczytów GEO/EMS pozostają otwarte.**
 - [ ] **9.5.4** Sprawdzić bieżące aktualizacje oraz ciągłość historii energii przed i po restarcie.
@@ -150,7 +150,8 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.5 – nieudany odczyt bazowy i poprawka | Pierwszy odczyt core.entity_registry przerwany bez zapisu before.json; brak pola domain w storage HA 2026.11, urządzenia przypisane przez config_entry_id. Poprawiono prywatne narzędzie i testy. Nie zmieniano HA, pompy ani rejestrów | [Plan i analiza](ETAP_9_5_PLAN_TESTOW_HA.md), [Skrypt](../scripts/ha_registry_snapshot.py) |
 | 2026-11-12 | 9.5 — udany prywatny snapshot | Operator potwierdził wynik `Private baseline saved: 73 entities, 2 devices.`; utworzono przedwdrożeniowy `before.json` w prywatnym folderze HA. Brak restartu, instalacji i testów powdrożeniowych; 9.5.3 pozostaje otwarty | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
 | 2026-11-12 | 9.5.1 – osobne archiwum integracji | Operator utworzył archiwum bieżącego `custom_components/euros_os` (66,5 KB), sprawdził `tar -tzf` i potwierdził uprawnienia `0600`; jeszcze nie zweryfikowano klucza odzyskiwania i kompletności pełnej kopii. Bez zmian HA | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
+| 2026-11-12 | 9.5.1 – zabezpieczenia potwierdzone | Operator potwierdził posiadanie Emergency Kit i pełnej kopii 1,2 GB obejmującej konfigurację oraz historię, pobranej na komputer. Archiwum integracji 66,5 KB i snapshot 73/2 już zapisane. 9.5.1 zamknięte na podstawie oświadczenia operatora, bez próby odtworzenia, restartu lub zmian w HA | [Plan 9.5](ETAP_9_5_PLAN_TESTOW_HA.md) |
 
 ## Kolejny ruch
 
-Plan i narzędzie porównania dla 9.5 przygotowane. Kolejny krok wymaga działania operatora: nowy pełny backup z kluczem szyfrowania, prywatny backup bieżącego kodu i dopiero po odrębnej zgodzie odczyt bazowy 73 encji (9.5.1/9.5.2). Bez zgody nie uruchamiać skryptu na HA, nie zmieniać integracji ani nie restartować Core. TLS 9.2.5/P1 i Marketplace 9.3.9 nadal otwarte; po ich zmianach pełna końcowa regresja 9.2.8/9.8.
+9.5.1 zamknięte na podstawie potwierdzenia operatora; snapshot bazowy 73 encji i 2 urządzeń gotowy. Teraz uzgodnić **9.5.2: zakres testów, okno serwisowe i wyraźną zgodę na ewentualne wdrożenie i restart**; bez tego nie zmieniać produkcyjnego HA. Przed samą instalacją ponownie potwierdzić aktualność backupu i bazowego snapshotu. TLS 9.2.5/P1 i Marketplace 9.3.9 wciąż otwarte; regresję 9.2.8/9.8 wykonać po zmianach.
