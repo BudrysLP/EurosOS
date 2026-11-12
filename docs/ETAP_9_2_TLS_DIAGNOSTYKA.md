@@ -50,15 +50,25 @@ Wyniki pochodzą z terminala Home Assistant i zostały odczytane z publicznego c
 4. **Wniosek:** standardowa ścieżka z zaufanym CA i dopasowaniem aktualnego IP nie przejdzie w obecnym stanie. Dwa osobne problemy: brak zaufania do lokalnego/root CA oraz niezgodność SAN z aktualnym adresem IP pompy. Nadal nie mamy niezależnie uwierzytelnionej CA ani modelu odnowy certyfikatu.
 5. **Decyzja:** nie przełączać działającego Home Assistant na ścisły TLS, nie podmieniać adresu IP, nie wyłączać zabezpieczeń w systemie operacyjnym i nie implementować pinningu na podstawie jednorazowego odczytu z niezaufanego połączenia. Zadanie 9.2.5 pozostaje **P1 / otwarte**.
 
-## Następny test read-only — rola drugiego certyfikatu
+## Drugi certyfikat — badanie wykonane 2026-11-12
 
-Poniższe polecenie wyświetla **jedynie publiczne metadane drugiego certyfikatu PEM** z odpowiedzi TLS, bez zapisywania pliku i bez wysyłania poleceń MQTT. Odczyt `CA:TRUE` sugeruje certyfikat urzędu certyfikacji, ale nie jest dowodem wiarygodności tego urzędu.
+Przeprowadzono odczyt publicznych metadanych drugiego certyfikatu z łańcucha. Wynik:
 
-```sh
-openssl s_client -connect 192.168.1.17:8883 -showcerts </dev/null 2>/dev/null | awk '/-----BEGIN CERTIFICATE-----/ {n++} n==2 {print} /-----END CERTIFICATE-----/ && n==2 {exit}' | openssl x509 -noout -subject -issuer -dates -ext basicConstraints
-```
+- Subject: `CN=An MQTT broker, O=OwnTracks.org, OU=generate-CA`.
+- Issuer: identyczny jak Subject, zgodny z wcześniej zaobserwowanym błędem OpenSSL dotyczącym samopodpisanego wystawcy.
+- `basicConstraints`: **critical, CA:TRUE** — certyfikat przeznaczony do pełnienia funkcji urzędu certyfikacji.
+- Ważny od `2020-05-12 17:43:36 GMT` do `2032-05-09 17:43:36 GMT`.
 
-Nie instalować automatycznie tego certyfikatu w systemowym trust store. Potwierdzenie źródła CA i zgodności nazwy serwera należy traktować niezależnie.
+**Interpretacja:** drugi certyfikat to samopodpisany Root CA, lecz nie jest sam przez się *zaufany*. Certyfikat serwera (pierwszy w łańcuchu) jest przez niego deklaratywnie wystawiony. Do potwierdzenia podpisu serwera i poprawności łańcucha można użyć testu z lokalnie podanym CA, ale **nie dowiedzie to autentyczności CA bez niezależnego kanału**.
+
+Nazwy z Subject/Issuer (`An MQTT broker`, `OwnTracks.org`, `generate-CA`) odpowiadają wartościom w publicznym skrypcie OwnTracks `generate-CA.sh`: https://github.com/owntracks/tools/blob/master/TLS/generate-CA.sh . To istotna poszlaka dotycząca metody wygenerowania certyfikatu, **nie dowód, że pompa korzysta z usługi OwnTracks lub że znamy tożsamość operatora CA**.
+
+### Następna decyzja
+
+1. Zwrócić się do dostawcy/producenta sterownika o *niezależnie dostarczony certyfikat publiczny CA albo oficjalny odcisk CA*, informację o udokumentowanym procesie wymiany/odnawiania certyfikatów oraz możliwości weryfikowania nazwy `ee-agent` przy połączeniu do aktualnego IP pompy.
+2. Opcjonalnie potwierdzić w samych testach offline, że certyfikat brokera jest podpisany przez pobrany CA i jego SAN zawiera `ee-agent`; taka próba techniczna **nie ustanawia zaufania** i nie nadaje się jako jedyna podstawa wdrożenia.
+3. Nie zmieniać teraz `ssl._create_unverified_context()` w produkcyjnym HA: istnieje ryzyko odcięcia komunikacji przy nagłym włączeniu walidacji. Nie zmieniać adresu pompy ani jej certyfikatu.
+4. Nie odkładać pozostałych niezależnych prac ETAPU 9 na czas oczekiwania na źródło zaufania. 9.2.5 pozostaje P1 i blokuje końcową bramkę wydania.
 
 ## Decyzje projektowe — bez dokonywania zmian w pompie
 
@@ -74,7 +84,8 @@ Nie instalować automatycznie tego certyfikatu w systemowym trust store. Potwier
 - [x] Potwierdzono w kodzie i dokumentacji Paho, że połączenie nie weryfikuje zaufania.
 - [x] Zebrano wynik `checkip` (A) i diagnozę łańcucha (B), oba negatywne.
 - [x] Odczytano liczbę certyfikatów przesłanych przez broker (C): **2**.
-- [ ] Zweryfikowano rolę drugiego certyfikatu i niezależnie potwierdzono wystawcę (CA) u producenta.
+- [x] Potwierdzono rolę drugiego certyfikatu: samopodpisany Root CA, `CA:TRUE`.
+- [ ] Niezależnie potwierdzono tożsamość i autentyczność wystawcy (CA) u producenta lub innym zaufanym kanałem.
 - [ ] Udokumentowano ostateczne ograniczenia i wybrany model wdrożenia, kompatybilny z realnym urządzeniem i innymi modelami Euros OS.
 - [ ] Zweryfikowano docelową implementację i regresję albo formalnie uznano nierozwiązany problem za **blokadę wydania**.
 
