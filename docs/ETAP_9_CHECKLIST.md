@@ -1,6 +1,6 @@
 # Euros OS — ETAP 9: główna lista kontrolna
 
-Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8); 9.5 W TOKU (3/8; zatwierdzone okno i plan wdrożenia).
+Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZONY; 9.2 W TOKU (6/8; TLS P1); 9.3 W TOKU (8/9); 9.4 ZAKOŃCZONY (8/8); 9.5 W TOKU (4/8; po restarcie GEO/EMS i identyfikatory zweryfikowane).
 
 ## Zasady
 
@@ -29,9 +29,9 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 
 ## Postęp
 
-- Ukończono: **33/69** zadań (47.8%).
+- Ukończono: **34/69** zadań (49.3%).
 - Ukończony podetap: **9.1 (8/8)** — audyt statyczny, nie naprawa usterek.
-- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS/P1 i regresja po zmianach; **9.3 (8/9)** — do kontroli rzeczywista aktualizacja Marketplace; **9.4 (8/8)** — komplet CI; **9.5 (3/8)** — zabezpieczenia 9.5.1 oraz dokumentacja 9.5.7 gotowe, operator rozpoczął okno serwisowe i zatwierdził wymianę kodu Euros OS oraz jeden zaplanowany restart HA Core (9.5.2). Wymiana 15 plików wykonana, restart zgłoszony; porównanie rejestrów 73/2 bez zmian. Testy odczytów, historii i logów w toku.
+- Aktywne podetapy: **9.2 (6/8)** — otwarty TLS/P1 i regresja po zmianach; **9.3 (8/9)** — do kontroli rzeczywista aktualizacja Marketplace; **9.4 (8/8)** — komplet CI; **9.5 (4/8)** — 9.5.1 backup, 9.5.2 okno, 9.5.3 rejestr + funkcjonalne odczyty GEO/EMS i 9.5.7 ograniczenia dokumentacyjne wykonane. Po aktualizacji/restart 2 urządzenia, 38+35 encji, 0 zmian w rejestrze, na ekranach dostępne zmienne odczyty. Historia energii, stale/reconnect, logi i decyzja końcowa pozostają otwarte.
 
 ## 9.1 — Audyt kodu źródłowego (8/8)
 
@@ -78,11 +78,11 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 - [x] **9.4.7** Przetestować blokady komend i zachowanie dotychczasowych kontrolek.
 - [x] **9.4.8** Uzyskać zielony wynik wszystkich wymaganych testów bez pominięć i udokumentować zakres.
 
-## 9.5 — Ostateczna kontrola na rzeczywistym HA (3/8; zakres i okno zatwierdzone)
+## 9.5 — Ostateczna kontrola na rzeczywistym HA (4/8; GEO i EMS po restarcie zaliczone)
 
 - [x] **9.5.1** Zachować aktualne kopie bezpieczeństwa i aktualizować je przed kolejnym wdrożeniem. **Potwierdzone przez operatora 12.11.2026: pełna kopia HA 1,2 GB pobrana poza HA, obejmuje konfigurację i historię, klucz Emergency Kit dostępny; archiwum aktualnego katalogu Euros OS 66,5 KB sprawdzone odczytem `tar -tzf`, prawa 0600. Nie wykonywano próby pełnego odtworzenia — przed wdrożeniem ponownie potwierdzić aktualność kopii.**
 - [x] **9.5.2** Uzgodnić okno testowe i zakres ingerencji w działający HA. **Zakres zatwierdzony przez operatora: wymiana wyłącznie kodu Euros OS, jeden planowany restart Core, kontrola odczytowa GEO/EMS/73 encji, bez zmian MQTT/TLS i nastaw. Kandydat przypięty do `07a49bccc0cb590f3179983156c706dbe4675189`. Operator potwierdził udany staging 15/15 plików w prywatnym katalogu HA, bez instalacji i restartu. Zakończono porównanie LIVE 15 / STAGE 15: brakujące [], dodatkowe [], zmienione 10 plików; przeanalizowano wpływ zmian na MQTT, encje i sterowanie. 12.11.2026 operator wyraźnie rozpoczął okno serwisowe i zatwierdził faktyczną wymianę plików oraz jeden zaplanowany restart Core. **To nie jest potwierdzenie, że wdrożenie wykonano**; wymagane preflight i kontrola po zmianach.**
-- [ ] **9.5.3** Sprawdzić GEO_1, EMS Dom i dotychczasowe 73 encje po ewentualnych poprawkach. **Po restarcie operator utworzył prywatny `after.json` i wykonał porównanie `before/after`: 73/73 encje, 2/2 urządzenia, 0 braków, 0 nowych wpisów, 0 zmian `entity_id`, 0 zmian powiązań urządzeń i 0 zmian `via_device_id`; `PASS: Registry identity unchanged`. To potwierdza zachowanie tożsamości w rejestrach, ale do zamknięcia 9.5.3 nadal wymagane są rzeczywiste odczyty GEO_1 i EMS Dom oraz kontrola dostępności encji.**
+- [x] **9.5.3** Sprawdzić GEO_1, EMS Dom i dotychczasowe 73 encje po ewentualnych poprawkach. **12.11.2026: operator potwierdził po restarcie 2 urządzenia, GEO_1 38 encji, EMS Dom 35 encji. Zrzuty pokazują aktualizujące się realne wartości GEO (CWU 46,1°C przy 50°C zadanej, tryb EMS, sprężarka i pompy pracują, temp. zewnętrzna 3,0°C) oraz EMS (bilans 3,24 kW, trzy fazy sumujące się w granicach zaokrągleń, import dziś 10,15 kWh, eksport 0,17 kWh). Rejestry przed/po: 73/73 encje, 2/2 urządzenia, 0 różnic w identyfikatorach i relacjach. Na widocznych polach brak unavailable. Zaliczone jako test funkcjonalny odczytów i zachowania rejestrów; **nie dowodzi indywidualnej aktywności wszystkich 73 stanów, ciągłości historii ani poprawności diagnostyki technicznej**. W diagnostyce EMS ujemne wartości mocy L2 oraz współczynnik TOTAL -1.0: do analizy znaczenia pól, bez zmian w pompie.**
 - [ ] **9.5.4** Sprawdzić bieżące aktualizacje oraz ciągłość historii energii przed i po restarcie.
 - [ ] **9.5.5** Zweryfikować zachowanie stale/unavailable i powrotu połączenia w sposób bezpieczny dla pompy.
 - [ ] **9.5.6** Przejrzeć logi po starcie oraz po okresie normalnej pracy.
@@ -161,6 +161,7 @@ Data aktualizacji: 2026-11-12. Właściciel prac: BudrysLP. Status: 9.1 ZAKOŃCZ
 | 2026-11-12 | 9.5 — SWAP PASS | Operator potwierdził `FINAL CHECK: PASS`, `SWAP: PASS`, 15/15 nowych plików i katalog rollbacku. HA Core **jeszcze nie był restartowany**; 9.5.3 i testy powdrożeniowe pozostają otwarte | [Raport wdrożenia](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
 | 2026-11-12 | 9.5 — restart zgłoszony przez operatora | Po `SWAP: PASS` operator poinformował „Zrobione” w odpowiedzi na polecenie `ha core check && ha core restart`. Uruchomienie nowego kodu zgłoszone, ale nie ma jeszcze wyniku porównania `before/after`, odczytów GEO/EMS ani logów; zadania 9.5.3–9.5.6 pozostają otwarte | [Raport wdrożenia](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
 | 2026-11-12 | 9.5.3 — porównanie rejestru PASS | Po restarcie operator wykonał `capture` do prywatnego `after.json` i `compare` z `before.json`: 73 encje, 2 urządzenia, wszystkie siedem kategorii zmian = 0, `PASS: Registry identity unchanged`. Brak publikacji prywatnych plików. Test funkcjonalny GEO/EMS oraz logi nadal otwarte | [Raport wdrożeniowy](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
+| 2026-11-12 | 9.5.3 — funkcjonalne odczyty GEO + EMS PASS | Screenshots HA: integracja 2 urządzenia/73 encje (GEO_1 38, METER_1 35); tryb EMS, aktywne stany pomp, aktualne temperatury, CWU i moc EMS 3,24 kW, liczniki 10,15/0,17 kWh. Odczyty zmienne w kolejnych ujęciach; rejestr 0 różnic. Techniczne EMS -0,13/-0,15 kW na L2 i TOTAL -1.0 wymaga interpretacji; bez testu historii/logów i bez sterowania pompą | [Raport wdrożeniowy](ETAP_9_5_PAKIET_WDROZENIOWY.md) |
 
 ## Kolejny ruch
 
