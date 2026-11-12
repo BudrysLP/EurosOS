@@ -80,6 +80,16 @@ Weryfikacja zaufania wystawcy i dopasowania adresu to **dwa odrębne warunki**. 
 
 Plan pozostaje wyłącznie diagnostyczny, bez zmian w Home Assistant i bez MQTT PUBLISH.
 
+## Potwierdzone wyniki testów fizycznego TLS — 12 listopada 2026
+
+Użytkownik wykonał oba bezpieczne polecenia diagnostyczne. Pierwsze zwróciło `IP 192.168.1.17 does NOT match certificate`, a drugie `verify error:num=19:self-signed certificate in certificate chain` na poziomie `depth=1`. Wyniki wskazują **niezależnie** na niezgodność IP z SAN certyfikatu serwera oraz brak zaufanego łańcucha certyfikatów wystawcy. Certyfikat nie jest czasowo przeterminowany.
+
+Nie jest to dowód włamania ani awarii urządzenia. Samodzielny import CA bez niezależnej weryfikacji pochodzenia i dopasowania nazwy nie wystarczy. W szczególności nie wolno bez dodatkowego zaufanego źródła traktować odcisku certyfikatu odczytanego przez dotychczas nieuwierzytelnione połączenie jako pełnego dowodu tożsamości.
+
+**9.2.5 pozostaje otwarte jako P1.** Następny krok: opcjonalna liczba certyfikatów przesłanych przez broker i ustalenie z producentem pochodzenia CA / sposobu zapewnienia weryfikowalnej nazwy serwera. Rozwiązanie musi zachowywać zgodność z innymi sterownikami; nie wprowadzano zmian w produkcyjnym HA ani domyślnym TLS.
+
+Szczegóły w [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
+
 ## Co dalej
 
 - Rozstrzygnąć 9.2.5: model certyfikatu TLS, bezpieczne warianty konfiguracji i kompatybilność.
