@@ -13,6 +13,7 @@ Description : Custom integration for EurosEnergy and E-On devices.
 """
 
 import logging
+import math
 import time
 from homeassistant.helpers import device_registry as dr
 from homeassistant.components.sensor import RestoreSensor, SensorEntity
@@ -264,10 +265,12 @@ class EurosOSSensor(SensorEntity):
 
         if self.key == "ZM_AC_IN_PWR":
             try:
-                amps = float(data.get("ZM_AC_IN_CUR", 0))
-                volts = float(data.get("ZM_AC_IN_VOL", 230))
+                amps = float(data["ZM_AC_IN_CUR"])
+                volts = float(data["ZM_AC_IN_VOL"])
+                if not (math.isfinite(amps) and math.isfinite(volts)):
+                    return None
                 return round(amps * volts, 2)
-            except (TypeError, ValueError):
+            except (KeyError, TypeError, ValueError, OverflowError):
                 return None
 
         if self.key == "ZM_AC_IN_ENERGY":
@@ -297,13 +300,22 @@ class EurosOSSensor(SensorEntity):
             try:
                 # A missing sensor field is not a real zero measurement.
                 value = float(data.get(self.key))
-                if not -50 <= value <= 149:
+                if not math.isfinite(value) or not -50 <= value <= 149:
                     return None
                 return round(value, 1)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 return None
 
-        return data.get(self.key)
+        raw = data.get(self.key)
+        if self._attr_state_class is not None:
+            if isinstance(raw, bool):
+                return None
+            try:
+                numeric = float(raw)
+            except (TypeError, ValueError, OverflowError):
+                return None
+            return numeric if math.isfinite(numeric) else None
+        return raw
 
     @callback
     def _handle_coordinator_update(self):
