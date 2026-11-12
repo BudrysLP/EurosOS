@@ -110,9 +110,38 @@ async def test_real_ha_2026_11_registers_geo_and_ems_without_mqtt(
         assert hass.states.get(temperature.entity_id) is not None
         assert hass.states.get(temperature.entity_id).state == "23.5"
 
+        # Capture the exact registry identity before unloading. Reload should
+        # reactivate the same entities, not allocate "_2" suffixes or devices.
+        identities_before = {
+            (ent.domain, ent.platform, ent.unique_id): ent.entity_id
+            for ent in owned_entities
+        }
+        device_ids_before = {device.id for device in owned_devices}
         assert await hass.config_entries.async_unload(entry.entry_id)
         await hass.async_block_till_done()
         assert entry.entry_id not in hass.data.get(DOMAIN, {})
-        # Unloading does not delete entity registry identities and history.
         for entity in owned_entities:
             assert entity_registry.async_get(entity.entity_id) is not None
+
+        # Repeat the full setup/unload cycle with the same ConfigEntry.
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        reload_entities = er.async_entries_for_config_entry(
+            entity_registry, entry.entry_id
+        )
+        reload_devices = dr.async_entries_for_config_entry(
+            device_registry, entry.entry_id
+        )
+        assert len(reload_entities) == 73
+        assert len(reload_devices) == 2
+        assert {
+            (ent.domain, ent.platform, ent.unique_id): ent.entity_id
+            for ent in reload_entities
+        } == identities_before
+        assert {device.id for device in reload_devices} == device_ids_before
+        assert hass.states.get(temperature.entity_id).state == "23.5"
+
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        await hass.async_block_till_done()
+        assert entry.entry_id not in hass.data.get(DOMAIN, {})
+        assert len(er.async_entries_for_config_entry(entity_registry, entry.entry_id)) == 73
