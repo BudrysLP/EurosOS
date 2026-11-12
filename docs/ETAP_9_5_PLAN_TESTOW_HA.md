@@ -75,6 +75,23 @@ Są to **instrukcje na przyszłość**; niczego teraz nie uruchomiono. Jeśli we
 
 Testy syntetyczne: `tests/test_ha_registry_snapshot.py` oraz zestaw CI gałęzi 9.5.
 
+## C.1. Korekta narzędzia snapshot — 12 listopada 2026
+
+Podczas pierwszego **odczytu bez zmian w HA** operator zgłosił `STOP: ValueError: An Euros OS entity has incomplete registry identity`. Skrypt zatrzymał się w pamięci podczas budowania zestawienia; `before.json` **nie został zapisany**. Nie stwierdzono na tej podstawie awarii ani uszkodzenia encji. Przyczynę ustalono w źródłach Home Assistant Core 2026.11.0: `core.entity_registry` zapisuje `entity_id`, `platform`, `unique_id` i `config_entry_id`, ale **bez osobnego pola `domain`**. Ponadto aktualny `core.device_registry` używa `config_entry_id` w urządzeniu, a nie starego `config_entries`.
+
+Skrypt `scripts/ha_registry_snapshot.py` poprawiono:
+- domena wyprowadzana z `entity_id` (część przed pierwszą kropką), z walidacją i odrzucaniem sprzecznych danych;
+- urządzenia przypisywane przez `config_entry_id` (HA 2026.11), z bezpiecznym odczytem starszego wariantu `config_entries`;
+- nadal wyłącznie czyta `.storage`, zapisuje prywatny snapshot tylko przy spodziewanych **73 encjach i 2 urządzeniach** oraz nie udostępnia prywatnych identyfikatorów.
+
+Przebudowano syntetyczne fixture'y tak, by odwzorowywały rzeczywisty format zapisu HA 2026.11. Dodano 4 testy dla nowego, starszego i błędnego formatu. Testy lokalnych kopii w CI **nie zastępują** ponownego uruchomienia na HA użytkownika.
+
+Po zielonym CI operator powinien ponownie pobrać poprawiony skrypt do tego samego prywatnego folderu, wykonać `python3 -m py_compile`, a następnie ponowić polecenie `capture` **tylko jeśli nie ma już pliku `before.json`**. Nie usuwać i nie nadpisywać istniejących snapshotów bez ustalenia ich pochodzenia. Nie przekazywać pliku `before.json`, haseł, danych pomp i `.storage` do rozmowy ani repozytorium.
+
+Źródło techniczne:
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/entity_registry.py
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/device_registry.py
+
 ## D. Scenariusze na rzeczywistym HA — do wykonania po zgodzie
 
 | Kod | Kroki | Kryterium zaliczenia | Status |
