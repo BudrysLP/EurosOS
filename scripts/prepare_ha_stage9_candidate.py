@@ -101,7 +101,7 @@ def extract_verified_files(archive: bytes, blobs: dict[str, str]) -> dict[str, b
                 raise ValueError(f"Unreadable tar member: {name}")
             data = stream.read()
             calculated_sha = hashlib.sha1(
-                f"blob {len(data)}\\0".encode("ascii") + data
+                b"blob " + str(len(data)).encode("ascii") + bytes([0]) + data
             ).hexdigest()
             if calculated_sha != blobs[name]:
                 raise ValueError(f"Git blob verification failed for {name}")
