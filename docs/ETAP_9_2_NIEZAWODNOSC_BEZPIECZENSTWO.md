@@ -90,6 +90,10 @@ Nie jest to dowód włamania ani awarii urządzenia. Samodzielny import CA bez n
 
 Szczegóły w [ETAP_9_2_TLS_DIAGNOSTYKA.md](ETAP_9_2_TLS_DIAGNOSTYKA.md).
 
+## Uzupełnienie — liczba certyfikatów w odpowiedzi brokera
+
+Odczyt wykonany 12 listopada 2026 r. wskazał **2** certyfikaty PEM wysłane przez broker przy `-showcerts`. Jest to zgodne z hipotezą certyfikatu końcowego i certyfikatu wystawcy, ale wymaga potwierdzenia metadanych `subject`, `issuer` i `basicConstraints` drugiego certyfikatu. Sama liczba nie świadczy o zaufaniu do CA ani nie naprawia niedopasowania IP. Odczyt publicznych pól zaplanowano jako kolejny test read-only, opisany w [procedurze TLS](ETAP_9_2_TLS_DIAGNOSTYKA.md). 9.2.5 jest nadal otwarte (P1).
+
 ## Co dalej
 
 - Rozstrzygnąć 9.2.5: model certyfikatu TLS, bezpieczne warianty konfiguracji i kompatybilność.
