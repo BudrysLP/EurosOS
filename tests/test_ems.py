@@ -228,5 +228,68 @@ class EmsMeterTests(unittest.TestCase):
         )
 
 
+    def test_daily_energy_repeated_sample_does_not_double_count(self):
+        snapshot = ("2026-11-12", 1.25, 120.5)
+        for _ in range(100):
+            snapshot = ems.accumulate_ems_daily_energy(
+                *snapshot, "2026-11-12", "120.5"
+            )
+        self.assertEqual(snapshot, ("2026-11-12", 1.25, 120.5))
+        snapshot = ems.accumulate_ems_daily_energy(
+            *snapshot, "2026-11-12", "120.75"
+        )
+        self.assertEqual(snapshot, ("2026-11-12", 1.5, 120.75))
+
+    def test_daily_energy_outage_spanning_midnight_rebaselines(self):
+        # The first post-midnight packet must not charge overnight usage
+        # to a day during which HA was offline.
+        restored = ("2026-11-11", 3.45, 1098.0)
+        after = ems.accumulate_ems_daily_energy(
+            *restored, "2026-11-12", 1104.2
+        )
+        self.assertEqual(after, ("2026-11-12", 0.0, 1104.2))
+        after = ems.accumulate_ems_daily_energy(
+            *after, "2026-11-12", 1104.7
+        )
+        self.assertEqual(after, ("2026-11-12", 0.5, 1104.7))
+
+    def test_corrupted_meter_packet_never_changes_restored_total(self):
+        initial = ("2026-11-12", 0.81, 210.25)
+        for bad in ("nan", "NaN", "inf", float("inf"), float("-inf"),
+                    "", [], None, {}, True, "-1", "abc"):
+            with self.subTest(sample=bad):
+                self.assertEqual(
+                    ems.accumulate_ems_daily_energy(
+                        *initial, "2026-11-12", bad
+                    ),
+                    initial,
+                )
+        # Missing previous lifetime value is a baseline, not a zero.
+        self.assertEqual(
+            ems.accumulate_ems_daily_energy(
+                "2026-11-12", 0.81, None, "2026-11-12", "210.25"
+            ),
+            ("2026-11-12", 0.81, 210.25),
+        )
+
+    def test_counter_reset_does_not_erase_daily_consumption(self):
+        state = ("2026-11-12", 1.8, 500.0)
+        # Small jitter must not make consumption decrease.
+        self.assertEqual(
+            ems.accumulate_ems_daily_energy(
+                *state, "2026-11-12", 499.99
+            ),
+            state,
+        )
+        state = ems.accumulate_ems_daily_energy(
+            *state, "2026-11-12", 0.0
+        )
+        self.assertEqual(state, ("2026-11-12", 1.8, 0.0))
+        state = ems.accumulate_ems_daily_energy(
+            *state, "2026-11-12", 0.2
+        )
+        self.assertEqual(state, ("2026-11-12", 2.0, 0.2))
+
+
 if __name__ == "__main__":
     unittest.main()
