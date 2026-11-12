@@ -1,16 +1,13 @@
-# Retry CI after GitHub internal server error (no test logic changes).
-name: Euros OS - Integration regression tests
+# Euros OS integration: offline regression and isolated Home Assistant API tests.
+name: Euros OS - CI (regression and HA Core)
 
 on:
   push:
     branches:
-      - feature/auto-pump-discovery
-      - feature/dynamic-ems-discovery
-      - feature/compatibility-safety
-      - feature/integration-failure-scenarios
-      - feature/stage8-ha-preflight
-      - feature/stage9-reliability
-      - feature/stage9-compatibility
+      - main
+      - "feature/**"
+      - "fix/**"
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -20,6 +17,7 @@ jobs:
   tests:
     name: Unit and MQTT simulation / Python ${{ matrix.python-version }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -27,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout tested branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -45,10 +43,10 @@ jobs:
           python -c "import sys; assert sys.version_info >= (3, 14, 2) if sys.version_info.minor == 14 else True"
 
       - name: Check Python syntax
-        run: python -m compileall -q custom_components/euros_os tests
+        run: python -m compileall -q custom_components/euros_os tests tests_ha scripts
 
-      - name: Run tests without HA or MQTT broker
-        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Run all offline tests (strict – no skips)
+        run: python scripts/run_unit_tests_strict.py
 
       - name: Validate integration release ZIP (no release created)
         run: python scripts/build_release_zip.py --output /tmp/euros_os.zip
@@ -59,7 +57,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Checkout integration code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up supported Python
         uses: actions/setup-python@v6
@@ -75,4 +73,4 @@ jobs:
         run: python -m unittest discover -s tests_ha -p 'test_*.py' -v
 
       - name: Verify GEO/EMS entry registration with actual HA test fixture
-        run: python -m pytest -q -p no:respx tests_ha/test_real_ha_registration.py
+        run: python -m pytest -q -p no:respx --strict-markers tests_ha/test_real_ha_registration.py
