@@ -74,14 +74,14 @@ async def test_real_ha_2026_11_registers_geo_and_ems_without_mqtt(
 
         device_registry = dr.async_get(hass)
         entity_registry = er.async_get(hass)
-        owned_devices = [
-            device for device in device_registry.devices.values()
-            if entry.entry_id in device.config_entries
-        ]
-        owned_entities = [
-            entity for entity in entity_registry.entities.values()
-            if entity.config_entry_id == entry.entry_id
-        ]
+        # HA 2026.11 deprecates direct mapping access to registry.devices
+        # and registry.entities. Use the public config-entry helpers instead.
+        owned_devices = dr.async_entries_for_config_entry(
+            device_registry, entry.entry_id
+        )
+        owned_entities = er.async_entries_for_config_entry(
+            entity_registry, entry.entry_id
+        )
         assert len(owned_devices) == 2
         assert len(owned_entities) == 73
         assert len({entity.unique_id for entity in owned_entities}) == 73
