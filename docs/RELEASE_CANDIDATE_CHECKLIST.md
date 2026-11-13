@@ -1,6 +1,6 @@
 # Euros OS — lista kontrolna kandydata wydania i jednego końcowego PR
 
-Stan na 2026-11-13. **RELEASE BLOCKED — brak zgody na publikację.** Ta lista przygotowuje formalną bramkę jakości, nie nadaje numeru wydania i nie otwiera PR.
+Stan na 2026-11-13. **Decyzja właściciela 13.11.2026: dopuszcza przedstawienie integracji autorowi w jednym PR z jawnym ujawnieniem ograniczeń TLS i poświadczeń.** Nie jest to potwierdzenie bezpieczeństwa połączenia ani upoważnienie do scalenia lub wydania oficjalnej wersji przez autora.
 
 ## A. Funkcjonalność i zgodność
 
@@ -14,7 +14,7 @@ Stan na 2026-11-13. **RELEASE BLOCKED — brak zgody na publikację.** Ta lista 
 
 ## B. Bezpieczeństwo — blokady
 
-- [ ] **P1: uwierzytelnienie serwera MQTT/TLS** — obecny `ssl._create_unverified_context` wymaga decyzji i poprawki z testami. Połączenie TLS 1.3 jest szyfrowane, ale nie weryfikuje tożsamości brokera. W SAN certyfikatu nie ma bieżącego IP; lokalne CA nie zostało niezależnie potwierdzone. Nie implementować automatycznego fallback na brak weryfikacji.
+- [x] **Świadomie pozostawiony obecny TLS — decyzja właściciela 13.11.2026:** NIE zmieniać `ssl._create_unverified_context` w `coordinator.py` i `config_flow.py`. Połączenie jest szyfrowane, ale NIE uwierzytelnia brokera; istnieje ryzyko MITM/ujawnienia wspólnych poświadczeń. Brak niezależnego potwierdzenia CA i zgodności obecnego IP z SAN. Ograniczenie musi być jawnie opisane w README/PR/release notes. **Odstępstwo bezpieczeństwa zaakceptowane przez użytkownika, nie naprawione i nie rekomendowane jako domyślny standard bezpieczeństwa.**
 - [x] **Decyzja właściciela projektu (2026-11-13): fabryczne wspólne poświadczenia MQTT pozostają bez zmian** w `const.py`; nie dodawać formularza loginu/hasła ani migracji konfiguracji. Jest to świadomie zaakceptowane ograniczenie istniejącej integracji, NIE gwarancja poufności hasła. W dokumentacji i PR nie powielać jego wartości. Zabezpieczenie sieci i uwierzytelnienie tożsamości serwera TLS pozostają osobnym zagadnieniem; TLS nadal blokuje wydanie.
 - [ ] Brak sekretów i identyfikatorów prywatnych w finalnym diff, ZIP i dokumentacji.
 - [ ] Uzgodnione zasady blokowania niezweryfikowanych komend GEO; testy bez fizycznego sterowania.
@@ -48,7 +48,7 @@ Stan na 2026-11-13. **RELEASE BLOCKED — brak zgody na publikację.** Ta lista 
 
 ## Następne 3 konkretne zadania
 
-1. P1 bezpieczeństwo: rozwiązać weryfikację CA/hostname i sposób postępowania z uwierzytelnianiem.
+1. Udokumentować i przekazać autorowi świadome pozostawienie nieweryfikowanego TLS oraz fabrycznych poświadczeń; nie przedstawiać jako naprawionego bezpieczeństwa.
 2. Uzgodnić bazę upstream, zakres i minimalne wersje; finalnie zamknąć HACS/Marketplace.
 3. Przygotować czystą gałąź gotową do review, przetestować i zwrócić autorowi **jeden** finalny PR.
 
