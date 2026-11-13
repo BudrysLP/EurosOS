@@ -252,6 +252,60 @@ class CoordinatorDiscoveryTests(unittest.TestCase):
         self.client.emit([self.geo(), self.meter()])
         self.assertEqual(self.loop.pending, [])
 
+    def test_stage7_morning_peak_preserves_raw_kw_without_scaling(self):
+        # Representative test fixture inspired by the Euros app's morning
+        # import spike, NOT a synchronized sample or a sign calibration.
+        self.client.emit([self.geo(), self.meter("4.2")])
+        raw = self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"]
+        ems = sys.modules["custom_components.euros_os.ems"]
+        self.assertEqual(ems.parse_ems_numeric(raw), 4.2)
+        self.assertEqual(self.client.published, [])
+
+    def test_stage7_negative_and_zero_grid_power_remain_distinct(self):
+        ems = sys.modules["custom_components.euros_os.ems"]
+        for reading, expected in (("-0.35", -0.35), ("0", 0.0), ("+1.25", 1.25)):
+            with self.subTest(reading=reading):
+                self.client.emit([self.geo(), self.meter(reading)])
+                value = self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"]
+                self.assertEqual(ems.parse_ems_numeric(value), expected)
+        # Direction of grid import/export still needs real synchronized data.
+
+    def test_stage7_bad_meter_value_never_becomes_false_zero(self):
+        ems = sys.modules["custom_components.euros_os.ems"]
+        for value in ("", "NaN", "not a measurement", None, True):
+            with self.subTest(value=value):
+                self.client.emit([self.geo(), self.meter(value)])
+                reading = self.coordinator.ems_meters["METER_1"].get("TOTAL_ACT_POW_FL_1")
+                self.assertIsNone(ems.parse_ems_numeric(reading))
+
+    def test_stage7_meter_only_updates_do_not_refresh_stale_pump(self):
+        self.client.emit([self.geo(), self.meter("0.15")])
+        original_pump = self.coordinator.device
+        self.coordinator._last_update = 100.0  # simulated old pump update
+        self.client.emit([self.meter("4.2")])
+        self.assertIs(self.coordinator.device, original_pump)
+        self.assertEqual(self.coordinator._last_update, 100.0)
+        self.assertIn("METER_1", self.coordinator._meter_last_update)
+        self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "4.2")
+
+    def test_stage7_missing_meter_in_complete_snapshot_does_not_create_zero(self):
+        ems = sys.modules["custom_components.euros_os.ems"]
+        self.client.emit([self.geo(), self.meter("0.15")])
+        self.client.emit([self.geo()])
+        self.assertNotIn("METER_1", self.coordinator.ems_meters)
+        self.assertIsNone(ems.parse_ems_numeric(
+            self.coordinator.ems_meters.get("METER_1", {}).get("TOTAL_ACT_POW_FL_1")
+        ))
+
+    def test_stage7_separate_meters_do_not_contaminate_home_meter(self):
+        self.client.emit([self.geo(), self.meter("0.2")])
+        other = {"Name": "METER_2", "Type": "METER",
+                 "Data": {"TOTAL_ACT_POW_FL_1": "3.7"}}
+        self.client.emit([other])
+        self.assertEqual(self.coordinator.ems_meters["METER_1"]["TOTAL_ACT_POW_FL_1"], "0.2")
+        self.assertEqual(self.coordinator.ems_meters["METER_2"]["TOTAL_ACT_POW_FL_1"], "3.7")
+        self.assertEqual(self.client.published, [])
+
     def test_loss_of_mqtt_does_not_clear_snapshot_or_publish(self):
         self.client.emit([self.geo(), self.meter()])
         self.loop.flush()
