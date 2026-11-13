@@ -24,7 +24,7 @@ Zmiany historyczne wydań oficjalnych utrzymuje autor repozytorium `McKoPcIu/Eur
 
 ### Ograniczenia / blokady wydania
 - **P1 TLS:** aktualny kod nie weryfikuje tożsamości certyfikatu MQTT; lokalny CA nie jest niezależnie uwierzytelniony, a adres IP HA nie zgadza się z SAN. Nie deklarować problemu jako naprawionego.
-- **P1 przegląd danych uwierzytelniających:** w `const.py` istnieją stałe uwierzytelniania MQTT. Przed wydaniem przeprowadzić audyt źródła i dystrybucji poświadczeń, uzgodnić z autorem bezpieczną procedurę ich obsługi. Nigdy nie kopiować tych wartości do PR, dzienników czy dokumentacji.
+- **Zaakceptowane ograniczenie:** fabryczne, wspólne poświadczenia brokera MQTT pozostają w `const.py` bez zmian zgodnie z decyzją właściciela projektu z 13.11.2026. Nie należy przedstawiać ich jako sekretu indywidualnego użytkownika ani powielać ich wartości w dokumentacji. TLS z weryfikacją tożsamości brokera nadal stanowi osobną blokadę P1.
 - Brak testów na fizycznych `FriskoATMO`, `FriskoALLINONE` oraz dodatkowych `METER_2/METER_3`.
 - Instalacja/aktualizacja w HACS/Marketplace z końcowego archiwum oraz minimalna wersja HA nieustalone.
 - Numer wydania i decyzja o publikacji należą do autora. Otwarty PR #3 musi zostać rozstrzygnięty przed jednym końcowym PR.
