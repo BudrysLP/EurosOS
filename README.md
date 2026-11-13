@@ -6,7 +6,7 @@
 
 Integracja **Euros OS** zapewnia lokalny odczyt danych urządzeń EurosEnergy / E-On przez MQTT/TLS oraz wybrane, zabezpieczone funkcje sterowania pompą ciepła.
 
-> **Status tej gałęzi: kandydat rozwojowy do wspólnego PR, NIE wydanie.** Wersja w `manifest.json` nie została zmieniona; numer i minimalna obsługiwana wersja Home Assistant wymagają uzgodnienia z autorem. Nie zaleca się instalowania tej gałęzi na działającym systemie bez kopii zapasowej i zatwierdzonego planu testu. Otwarty problem P1: w kodzie występuje TLS bez weryfikacji tożsamości serwera. Szczegóły: [plan bezpieczeństwa TLS](docs/ETAP_9_2_TLS_DIAGNOSTYKA.md).
+> **Status: kandydat do jednego PR dla autora, nie oficjalne wydanie.** Numer wersji i minimalna obsługiwana wersja Home Assistant wymagają uzgodnienia z autorem. Na polecenie właściciela projektu nie zmieniamy istniejącego TLS ani wspólnych fabrycznych danych logowania. **Istniejący TLS 1.3 szyfruje przesyłane dane, lecz użycie `ssl._create_unverified_context()` oznacza brak uwierzytelnienia brokera i ryzyko MITM / przechwycenia poświadczeń.** Jest to świadomie zaakceptowane ograniczenie, a NIE naprawiona luka. Nie udostępniaj portu 8883 do Internetu; ogranicz dostęp sieciowy do zaufanych urządzeń. Szczegóły diagnostyki: [TLS](docs/ETAP_9_2_TLS_DIAGNOSTYKA.md).
 
 ## Obsługiwane urządzenia i rzeczywisty zakres testów
 
