@@ -23,7 +23,7 @@ Zmiany historyczne wydań oficjalnych utrzymuje autor repozytorium `McKoPcIu/Eur
 - Na rzeczywistym HA Core 2026.11.1: 73/73 encje, 2 urządzenia; 35/35 EMS i 38/38 GEO w stanie dostępnym; w obu tabelach Recorder 32/32 serie statystyczne EMS z punktami przed i po aktualizacji. Nie zbadano wszystkich luk i poprawności pomiarów.
 
 ### Ograniczenia / blokady wydania
-- **P1 TLS:** aktualny kod nie weryfikuje tożsamości certyfikatu MQTT; lokalny CA nie jest niezależnie uwierzytelniony, a adres IP HA nie zgadza się z SAN. Nie deklarować problemu jako naprawionego.
+- **Świadomie niezmieniony TLS (decyzja właściciela 13.11.2026):** obecny kod szyfruje MQTT przez TLS, ale nie weryfikuje certyfikatu/tożsamości brokera (`ssl._create_unverified_context`). Lokalny CA nie ma niezależnego potwierdzenia, a obecny IP HA nie zgadza się z SAN. **To znane ryzyko MITM i możliwego ujawnienia fabrycznych, wspólnych poświadczeń; nie jest to naprawa bezpieczeństwa.** Jawnie ujawnić autorowi w końcowym PR i opisie wydania.
 - **Zaakceptowane ograniczenie:** fabryczne, wspólne poświadczenia brokera MQTT pozostają w `const.py` bez zmian zgodnie z decyzją właściciela projektu z 13.11.2026. Nie należy przedstawiać ich jako sekretu indywidualnego użytkownika ani powielać ich wartości w dokumentacji. TLS z weryfikacją tożsamości brokera nadal stanowi osobną blokadę P1.
 - Brak testów na fizycznych `FriskoATMO`, `FriskoALLINONE` oraz dodatkowych `METER_2/METER_3`.
 - Instalacja/aktualizacja w HACS/Marketplace z końcowego archiwum oraz minimalna wersja HA nieustalone.
