@@ -160,10 +160,21 @@ Użytkownik przesłał zrzuty integracji Home Assistant po aktualizacji. Na ekra
 
 **Wniosek:** 9.5.3 zaliczono jako test powdrożeniowej rejestracji i odczytów GEO/EMS razem z wynikiem `PASS: Registry identity unchanged`. Nie weryfikowano ciągłości historii Recorder/Panelu Energia (9.5.4), pełnego odpornościowego cyklu MQTT (9.5.5) ani logów HA Core (9.5.6). Zrzuty nie stanowią niezależnego testu wszystkich 73 wartości.
 
+## 4.5. Historia energii pobranej po restarcie — test wizualny PASS (13.11.2026)
+
+Operator dostarczył dwa zrzuty historii Home Assistant encji `EMS – Dom → Energia pobrana dzisiaj`, oba z dnia 12 listopada 2026 r. Obejmują zakres `18:00–21:00` oraz `21:00–00:00`, czyli okres przed i po wdrożeniu/restartcie.
+
+- Na pierwszym wykresie wartość narasta około **8,3→12,6 kWh**.
+- Na drugim wykresie zaczyna się około **12,6 kWh** i narasta do około **15,4 kWh** przed północą.
+- W widocznym przebiegu nie widać niezamierzonego wyzerowania w trakcie dnia, nagłego ujemnego skoku ani rozłączenia ciągłości historii między odcinkami.
+- Wykresy pokazują wizualną ciągłość historii importu w Home Assistant Recorder; **nie** są formalną weryfikacją fizycznego licznika ani pełnym testem statystyk długoterminowych.
+
+**Status:** ciągłość `Energia pobrana dzisiaj` w oknie aktualizacji — **PASS**. Nadal **brak wykresów `Energia oddana dzisiaj`** i potwierdzenia normalnego resetu dobowego po północy. **9.5.4 pozostaje otwarte** do uzupełnienia; nie zmieniamy konfiguracji, nie restartujemy HA i nie manipulujemy licznikami.
+
 **Kolejne kroki bez ingerencji w działanie pompy:**
 1. **WYKONANE:** prywatny `after.json`, 73 encje i 2 urządzenia.
 2. **WYKONANE:** porównanie `before`/`after`, 0 różnic, wynik PASS.
-3. **GEO/EMS ZALICZONE:** odczyty po restarcie i 73/2 wpisy rejestrów zachowane; **OTWARTE:** ciągłość historii energii (9.5.4).
+3. **GEO/EMS ZALICZONE:** odczyty po restarcie i 73/2 wpisy rejestrów zachowane; **ENERGIA POBRANA ZALICZONA:** ciągłość na wykresach 18:00–00:00; **OTWARTE:** historia energii oddanej i normalny reset o północy (9.5.4).
 4. **OTWARTE:** logi Core; nie wykonywać dodatkowego restartu bez osobnej decyzji operatora.
 
 
