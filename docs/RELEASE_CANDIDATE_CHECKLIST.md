@@ -15,7 +15,7 @@ Stan na 2026-11-13. **RELEASE BLOCKED — brak zgody na publikację.** Ta lista 
 ## B. Bezpieczeństwo — blokady
 
 - [ ] **P1: uwierzytelnienie serwera MQTT/TLS** — obecny `ssl._create_unverified_context` wymaga decyzji i poprawki z testami. Połączenie TLS 1.3 jest szyfrowane, ale nie weryfikuje tożsamości brokera. W SAN certyfikatu nie ma bieżącego IP; lokalne CA nie zostało niezależnie potwierdzone. Nie implementować automatycznego fallback na brak weryfikacji.
-- [ ] **P1: dane uwierzytelniające** — audyt istniejących stałych MQTT w `const.py`, ryzyka rozpowszechniania poświadczeń i ścieżki migracji z autorem. Nie ujawniać wartości w issue/PR/changelog/logach.
+- [x] **Decyzja właściciela projektu (2026-11-13): fabryczne wspólne poświadczenia MQTT pozostają bez zmian** w `const.py`; nie dodawać formularza loginu/hasła ani migracji konfiguracji. Jest to świadomie zaakceptowane ograniczenie istniejącej integracji, NIE gwarancja poufności hasła. W dokumentacji i PR nie powielać jego wartości. Zabezpieczenie sieci i uwierzytelnienie tożsamości serwera TLS pozostają osobnym zagadnieniem; TLS nadal blokuje wydanie.
 - [ ] Brak sekretów i identyfikatorów prywatnych w finalnym diff, ZIP i dokumentacji.
 - [ ] Uzgodnione zasady blokowania niezweryfikowanych komend GEO; testy bez fizycznego sterowania.
 
